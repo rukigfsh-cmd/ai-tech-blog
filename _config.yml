@@ -1,0 +1,48 @@
+title: AIテックラボ
+description: 最新AI・ガジェット・テクノロジーを徹底解説
+url: "https://rukigfsh-cmd.github.io"
+baseurl: "/ai-tech-blog"
+
+lang: ja
+timezone: Asia/Tokyo
+encoding: utf-8
+
+# テーマ（GitHub Pages対応）
+theme: minima
+
+# プラグイン
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Minima設定
+minima:
+  skin: auto
+
+# ページネーション
+paginate: 10
+paginate_path: "/page:num/"
+
+# 除外ファイル
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - "*.bat"
+  - "*.py"
+
+# SEO設定
+author:
+  name: AIテックラボ編集部
+  email: ""
+
+# ソーシャルリンク（任意）
+twitter_username: ""
+github_username: ""
+
+# Analytics（後で追加）
+google_analytics: ""
+
+# AdSense（後で追加）
+adsense_publisher_id: ""
+adsense_ad_slot: ""

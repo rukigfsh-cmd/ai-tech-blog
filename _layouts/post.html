@@ -1,0 +1,89 @@
+---
+layout: default
+---
+
+<article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">{{ page.title | escape }}</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
+        {{ page.date | date: "%Y年%m月%d日" }}
+      </time>
+      {% if page.categories.size > 0 %}
+      &nbsp;|&nbsp;
+      {% for cat in page.categories %}
+        <a href="{{ '/categories/' | append: cat | relative_url }}">{{ cat }}</a>{% unless forloop.last %}, {% endunless %}
+      {% endfor %}
+      {% endif %}
+    </p>
+  </header>
+
+  <!-- Google AdSense（記事上部） -->
+  {% if site.adsense_publisher_id != "" %}
+  <div class="ad-container" style="text-align:center; margin: 1rem 0;">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site.adsense_publisher_id }}" crossorigin="anonymous"></script>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="{{ site.adsense_publisher_id }}"
+         data-ad-slot="{{ site.adsense_ad_slot }}"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+  {% endif %}
+
+  <div class="post-content e-content" itemprop="articleBody">
+    {{ content }}
+  </div>
+
+  <!-- Google AdSense（記事下部） -->
+  {% if site.adsense_publisher_id != "" %}
+  <div class="ad-container" style="text-align:center; margin: 2rem 0;">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="{{ site.adsense_publisher_id }}"
+         data-ad-slot="{{ site.adsense_ad_slot }}"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+  {% endif %}
+
+  <!-- 関連記事 -->
+  <div class="related-posts">
+    <h3>関連記事</h3>
+    <ul>
+    {% assign maxRelated = 4 %}
+    {% assign minCommonTags = 1 %}
+    {% assign related = "" %}
+    {% for post in site.posts %}
+      {% if post.url != page.url %}
+        {% for tag in page.tags %}
+          {% if post.tags contains tag %}
+            {% if related.size < maxRelated %}
+              <li><a href="{{ post.url | relative_url }}">{{ post.title }}</a></li>
+              {% break %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+    </ul>
+  </div>
+
+</article>
+
+<style>
+.post-header { border-bottom: 2px solid #e1e4e8; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+.post-meta { color: #666; font-size: 0.9rem; }
+.post-content h2 { border-left: 4px solid #0070f3; padding-left: 0.5rem; margin-top: 2rem; }
+.post-content h3 { color: #333; margin-top: 1.5rem; }
+.post-content a { color: #0070f3; }
+.amazon-search { background: #fff8e1; border: 1px solid #f0c040; border-radius: 8px; padding: 1rem; margin: 2rem 0; text-align: center; }
+.amazon-search input[type="text"] { padding: 0.5rem; width: 60%; border: 1px solid #ccc; border-radius: 4px; }
+.amazon-search button { padding: 0.5rem 1rem; background: #ff9900; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+.related-posts { background: #f8f9fa; border-radius: 8px; padding: 1rem 1.5rem; margin-top: 2rem; }
+.related-posts h3 { margin-top: 0; }
+.ad-container { min-height: 90px; }
+</style>
