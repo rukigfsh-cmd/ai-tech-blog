@@ -1,6 +1,18 @@
 <?xml version='1.0' encoding='utf-8'?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://rukigfsh-cmd.github.io/ai-tech-blog/2026/09/04/ゲーミングpc-自作-初心者/</loc>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rukigfsh-cmd.github.io/ai-tech-blog/2026/09/04/midjourney-画像生成-コツ/</loc>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rukigfsh-cmd.github.io/ai-tech-blog/2026/09/03/lm-studio-ローカルllm-導入/</loc>
     <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
