@@ -1,6 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://rukigfsh-cmd.github.io/ai-tech-blog/2026/09/16/n8n-自動化-使い方/</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rukigfsh-cmd.github.io/ai-tech-blog/2026/09/15/ブログ-ai-書き方/</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>weekly</changefreq>
