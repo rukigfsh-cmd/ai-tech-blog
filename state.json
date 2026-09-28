@@ -1,0 +1,13 @@
+{
+  "active_post": null,
+  "active_post_status": "completed",
+  "next_tasks": [
+    "次の記事のアイデアを検討"
+  ],
+  "recent_posts": [
+    "2026-08-31-claude-token-savings-complete-guide.md",
+    "2026-08-31-lm-studio-ローカルllm-導入.md"
+  ],
+  "branch": "claude/token-savings-strategy-yfea2t",
+  "notes": "CLAUDE.md, state.json, トークン節約ガイド記事を追加済み"
+}
