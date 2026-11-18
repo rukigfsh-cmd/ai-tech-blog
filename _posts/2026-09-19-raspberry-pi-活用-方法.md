@@ -12,6 +12,7 @@ tags:
   - 方法
 author: "AIテックラボ編集部"
 image: "/assets/images/raspberry-pi-活用-方法.png"
+pr: true
 ---
 
 ## 目次
@@ -30,7 +31,7 @@ image: "/assets/images/raspberry-pi-活用-方法.png"
 
 ## Raspberry Piを始める理由
 
-近年、[Raspberry Pi](https://www.amazon.co.jp/s?k=Raspberry+Pi&tag=aitechblog-22)（ラズベリーパイ）はハッカーだけでなく一般ユーザーの間でも人気があります。その人気の背景には、驚異的なコストパフォーマンスと柔軟性があります。
+近年、[Raspberry Pi](https://www.amazon.co.jp/s?k=Raspberry+Pi{% if site.data.affiliate.amazon_tag != "" %}&tag={{ site.data.affiliate.amazon_tag }}{% endif %})（ラズベリーパイ）はハッカーだけでなく一般ユーザーの間でも人気があります。その人気の背景には、驚異的なコストパフォーマンスと柔軟性があります。
 
 本記事では、Raspberry Piの具体的な活用方法を8つご紹介します。それぞれ初心者でも実装可能な内容ばかりです。
 
@@ -79,31 +80,3 @@ TensorFlow Lite Pi版を使えば、Raspberry Pi上で機械学習を実行で�
 ## 教育ツール
 
 ScratchやMicroPythonなどのプログラミング言語はPiで動作します。子供向けのコーディング教室でも人気があります。
-<div class="amazon-search">
-  <form action="https://www.amazon.co.jp/search" method="get" target="_blank">
-    <input type="hidden" name="tag" value="aitechblog-22">
-    <input type="text" name="field-keywords" placeholder="Amazonで検索">
-    <button type="submit">検索</button>
-  </form>
-</div>
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "Raspberry Pi 活用方法：初心者でもできる8つのアイデア",
-  "description": "Raspberry Piで始める人向け。ハードウェア知識がなくても家庭自動化やサーバー構築ができる。",
-  "author": {
-    "@type": "Organization",
-    "name": "AIテックラボ編集部"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "AIテックラボ",
-    "url": "https://rukigfsh-cmd.github.io/ai-tech-blog"
-  },
-  "datePublished": "2026-09-19",
-  "url": "https://rukigfsh-cmd.github.io/ai-tech-blog/posts/raspberry-pi-活用-方法"
-}
-</script>

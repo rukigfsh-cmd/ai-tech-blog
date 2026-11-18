@@ -42,31 +42,3 @@ GeminiはPythonやJavaScriptなどのコード作成も得意です。「HTMLで
 GeminiはGoogleアカウントと連携することで、GmailやDocsなどの機能拡張が可能です。「Gmailにスパムメールをフィルタリングするプロンプト」などを設定すると、実際に使えるようになります。ただし、この連携にはセキュリティリスクも伴います。
 
 Geminiの最大の特徴は「検索なしAI」という点にあります。外部情報に依存せず、学習データに基づいて回答するため、事実確認が必要な分野では注意が必要です。また、画像認識機能は非常に強力ですが、Deepfakeのような悪用も懸念されます。
-<div class="amazon-search">
-  <form action="https://www.amazon.co.jp/search" method="get" target="_blank">
-    <input type="hidden" name="tag" value="aitechblog-22">
-    <input type="text" name="field-keywords" placeholder="Amazonで検索">
-    <button type="submit">検索</button>
-  </form>
-</div>
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "Gemini Google AI の特徴と使い方｜最新情報まとめ",
-  "description": "Gemini Google AI は検索対応なしの無料AIチャットボットとして注目され、画像生成やコード作成など多機能な点が評価されている",
-  "author": {
-    "@type": "Organization",
-    "name": "AIテックラボ編集部"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "AIテックラボ",
-    "url": "https://rukigfsh-cmd.github.io/ai-tech-blog"
-  },
-  "datePublished": "2026-10-02",
-  "url": "https://rukigfsh-cmd.github.io/ai-tech-blog/posts/gemini-google-ai-特徴"
-}
-</script>

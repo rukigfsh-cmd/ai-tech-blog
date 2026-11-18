@@ -1,0 +1,69 @@
+name: auto-publish
+
+# 稼ぎエンジンの自動公開。
+# Claude の定期実行は claude/** ブランチに push する。
+# 次の2条件を両方満たす push だけを main にマージして公開する:
+#   1) 最後のコミットメッセージに "[auto-publish]" が含まれる
+#   2) 変更ファイルがすべて下の許可リスト内（記事・画像・データ・運用メモ）
+# レイアウト・設定・ワークフロー・アプリ本体の変更は自動公開しない（人間がマージする）。
+
+on:
+  push:
+    branches: ["claude/**"]
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: auto-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: contains(github.event.head_commit.message, '[auto-publish]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check changed files against the allowlist
+        id: check
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          BASE=$(git merge-base origin/main "$GITHUB_SHA")
+          CHANGED=$(git -c core.quotePath=false diff --name-only "$BASE" "$GITHUB_SHA")
+          echo "Changed files:"
+          echo "$CHANGED"
+          if [ -z "$CHANGED" ]; then
+            echo "Nothing new to publish."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          BAD=$(echo "$CHANGED" | grep -Ev '^(_posts/|_data/|assets/|automation/state/)' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::These files are outside the auto-publish allowlist and need a human merge:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Merge into main
+        if: steps.check.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898210+github-actions[bot]@users.noreply.github.com"
+          git checkout -B main origin/main
+          git merge --no-edit "$GITHUB_SHA" -m "Auto-publish from ${GITHUB_REF_NAME}"
+          git push origin main
+
+      # GITHUB_TOKEN での push は GitHub Pages の自動ビルドを起動しないため、明示的に依頼する。
+      - name: Request a GitHub Pages build
+        if: steps.check.outputs.ok == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds"

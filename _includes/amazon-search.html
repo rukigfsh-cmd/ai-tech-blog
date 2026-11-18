@@ -1,0 +1,11 @@
+{%- assign tag = site.data.affiliate.amazon_tag -%}
+{%- if site.data.affiliate.search_box and tag != "" -%}
+<div class="amazon-search">
+  <p class="amazon-search-title"><span class="aff-label">PR</span> 関連商品をAmazonで探す</p>
+  <form action="https://www.amazon.co.jp/s" method="get" target="_blank" rel="sponsored noopener">
+    <input type="hidden" name="tag" value="{{ tag }}">
+    <input type="text" name="k" placeholder="キーワードを入力" aria-label="Amazonで検索するキーワード">
+    <button type="submit">検索</button>
+  </form>
+</div>
+{%- endif -%}

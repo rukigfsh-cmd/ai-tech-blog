@@ -1,0 +1,27 @@
+<footer class="site-footer">
+  <div class="wrapper">
+    <h2 class="footer-heading">{{ site.title | escape }}</h2>
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>運営: {{ site.author.name | escape }}</li>
+          <li><a href="{{ '/about.html' | relative_url }}">運営者情報</a></li>
+          <li><a href="{{ '/privacy.html' | relative_url }}">プライバシーポリシー・免責事項</a></li>
+          <li><a href="{{ '/contact.html' | relative_url }}">お問い合わせ</a></li>
+        </ul>
+      </div>
+      <div class="footer-col footer-col-2">
+        <p>{{ site.description | escape }}</p>
+      </div>
+      <div class="footer-col footer-col-3">
+        <p class="disclosure">当サイトはアフィリエイト広告（成果報酬型広告）を利用しています。広告を含む記事には冒頭に表示しています。</p>
+        {%- if site.data.affiliate.amazon_tag != "" %}
+        <p class="disclosure">Amazonのアソシエイトとして、{{ site.title | escape }}は適格販売により収入を得ています。</p>
+        {%- endif %}
+      </div>
+    </div>
+  </div>
+</footer>
+<style>
+.disclosure { font-size: 0.8rem; color: #777; }
+</style>

@@ -1,0 +1,16 @@
+{%- comment -%}
+  楽天市場の商品リンク。使い方:
+  {% include rakuten.html url="https://item.rakuten.co.jp/..." title="商品名" note="ひとこと（任意）" %}
+  ID は _data/affiliate.yml の rakuten_id から入る（空なら通常リンク）。
+{%- endcomment -%}
+{%- assign rid = site.data.affiliate.rakuten_id -%}
+{%- if rid != "" -%}
+  {%- capture href -%}https://hb.afl.rakuten.co.jp/hgc/{{ rid }}/?pc={{ include.url | url_encode }}{%- endcapture -%}
+{%- else -%}
+  {%- assign href = include.url -%}
+{%- endif -%}
+<div class="aff-box">
+  <span class="aff-label">PR</span>
+  <a class="aff-link" href="{{ href }}" target="_blank" rel="sponsored noopener">{{ include.title }}を楽天市場で見る</a>
+  {%- if include.note %}<p class="aff-note">{{ include.note }}</p>{% endif %}
+</div>

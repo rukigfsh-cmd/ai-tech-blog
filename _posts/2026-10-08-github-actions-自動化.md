@@ -58,31 +58,3 @@ GITHUB_TOKEN は最小権限の原則で管理します。ReadWrite ではなく
 ## コスト最適化のための工夫
 
 無料枠を最大限活用するのが基本です。GitHub Actions は每月 2000 ミニッツまで無料で利用可能。その超過分のみ課金されます。大規模なプロジェクトでは、Self-Hosted Runner でコストを抑制する戦略も有効です。
-<div class="amazon-search">
-  <form action="https://www.amazon.co.jp/search" method="get" target="_blank">
-    <input type="hidden" name="tag" value="aitechblog-22">
-    <input type="text" name="field-keywords" placeholder="Amazonで検索">
-    <button type="submit">検索</button>
-  </form>
-</div>
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "GitHub Actions で自動化を完全マスターするガイド",
-  "description": "GitHub Actions 自動化について詳しく解説します。",
-  "author": {
-    "@type": "Organization",
-    "name": "AIテックラボ編集部"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "AIテックラボ",
-    "url": "https://rukigfsh-cmd.github.io/ai-tech-blog"
-  },
-  "datePublished": "2026-10-08",
-  "url": "https://rukigfsh-cmd.github.io/ai-tech-blog/posts/github-actions-自動化"
-}
-</script>

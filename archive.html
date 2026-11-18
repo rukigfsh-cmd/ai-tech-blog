@@ -1,0 +1,17 @@
+---
+layout: page
+title: 記事一覧
+permalink: /archive.html
+---
+
+<p>カテゴリ別の記事一覧です。</p>
+
+{%- assign cats = site.categories | sort %}
+{%- for category in cats %}
+<h2 id="{{ category[0] | slugify }}">{{ category[0] }}（{{ category[1].size }}）</h2>
+<ul>
+  {%- for post in category[1] %}
+  <li><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a> <small>{{ post.date | date: "%Y/%m/%d" }}</small></li>
+  {%- endfor %}
+</ul>
+{%- endfor %}

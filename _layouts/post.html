@@ -10,14 +10,21 @@ layout: default
       <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
         {{ page.date | date: "%Y年%m月%d日" }}
       </time>
-      {% if page.categories.size > 0 %}
+      {%- if page.last_modified_at %}
+      &nbsp;|&nbsp;更新: <time datetime="{{ page.last_modified_at | date_to_xmlschema }}" itemprop="dateModified">{{ page.last_modified_at | date: "%Y年%m月%d日" }}</time>
+      {%- endif %}
+      {%- if page.categories.size > 0 %}
       &nbsp;|&nbsp;
-      {% for cat in page.categories %}
-        <a href="{{ '/categories/' | append: cat | relative_url }}">{{ cat }}</a>{% unless forloop.last %}, {% endunless %}
-      {% endfor %}
-      {% endif %}
+      {%- for cat in page.categories %}
+        <a href="{{ '/archive.html' | relative_url }}#{{ cat | slugify }}">{{ cat }}</a>{% unless forloop.last %}, {% endunless %}
+      {%- endfor %}
+      {%- endif %}
     </p>
   </header>
+
+  {%- if page.pr %}
+  <p class="pr-notice">※本記事はプロモーション（アフィリエイト広告）を含みます。</p>
+  {%- endif %}
 
   <!-- Google AdSense（記事上部） -->
   {% if site.adsense_publisher_id != "" %}
@@ -37,6 +44,8 @@ layout: default
     {{ content }}
   </div>
 
+  {% include amazon-search.html %}
+
   <!-- Google AdSense（記事下部） -->
   {% if site.adsense_publisher_id != "" %}
   <div class="ad-container" style="text-align:center; margin: 2rem 0;">
@@ -50,40 +59,56 @@ layout: default
   </div>
   {% endif %}
 
+  <aside class="editorial-note">
+    この記事は{{ site.author.name }}が公開情報を調べてまとめています。調査・執筆・動作確認にはAIを活用しています。
+    内容の誤りや古くなった情報にお気づきの場合は<a href="{{ '/contact.html' | relative_url }}">お問い合わせ</a>からお知らせください。
+  </aside>
+
   <!-- 関連記事 -->
+  {%- assign related_count = 0 -%}
+  {%- capture related_items -%}
+    {%- for post in site.posts -%}
+      {%- if post.url != page.url and related_count < 4 -%}
+        {%- assign common = false -%}
+        {%- for tag in page.tags -%}{%- if post.tags contains tag -%}{%- assign common = true -%}{%- endif -%}{%- endfor -%}
+        {%- if common -%}
+          <li><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></li>
+          {%- assign related_count = related_count | plus: 1 -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- if related_count > 0 %}
   <div class="related-posts">
     <h3>関連記事</h3>
-    <ul>
-    {% assign maxRelated = 4 %}
-    {% assign minCommonTags = 1 %}
-    {% assign related = "" %}
-    {% for post in site.posts %}
-      {% if post.url != page.url %}
-        {% for tag in page.tags %}
-          {% if post.tags contains tag %}
-            {% if related.size < maxRelated %}
-              <li><a href="{{ post.url | relative_url }}">{{ post.title }}</a></li>
-              {% break %}
-            {% endif %}
-          {% endif %}
-        {% endfor %}
-      {% endif %}
-    {% endfor %}
-    </ul>
+    <ul>{{ related_items }}</ul>
   </div>
+  {%- endif %}
 
 </article>
 
 <style>
 .post-header { border-bottom: 2px solid #e1e4e8; padding-bottom: 1rem; margin-bottom: 1.5rem; }
 .post-meta { color: #666; font-size: 0.9rem; }
+.pr-notice { font-size: 0.85rem; color: #555; background: #f6f7f9; border-left: 4px solid #9aa6b8; padding: 0.5rem 0.75rem; margin: 0 0 1.5rem; }
 .post-content h2 { border-left: 4px solid #0070f3; padding-left: 0.5rem; margin-top: 2rem; }
-.post-content h3 { color: #333; margin-top: 1.5rem; }
+.post-content h3 { margin-top: 1.5rem; }
 .post-content a { color: #0070f3; }
+.aff-box { border: 1px solid #e3c96b; background: #fffbea; border-radius: 8px; padding: 0.75rem 1rem; margin: 1.25rem 0; }
+.aff-label { display: inline-block; font-size: 0.7rem; font-weight: bold; color: #7a5b00; border: 1px solid #c9a227; border-radius: 3px; padding: 0 0.3rem; margin-right: 0.4rem; vertical-align: middle; }
+.aff-link { font-weight: bold; }
+.aff-note { margin: 0.4rem 0 0; font-size: 0.85rem; color: #555; }
 .amazon-search { background: #fff8e1; border: 1px solid #f0c040; border-radius: 8px; padding: 1rem; margin: 2rem 0; text-align: center; }
+.amazon-search-title { margin: 0 0 0.5rem; font-size: 0.9rem; }
 .amazon-search input[type="text"] { padding: 0.5rem; width: 60%; border: 1px solid #ccc; border-radius: 4px; }
-.amazon-search button { padding: 0.5rem 1rem; background: #ff9900; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+.amazon-search button { padding: 0.5rem 1rem; background: #ff9900; border: none; border-radius: 4px; cursor: pointer; color: #222; font-weight: bold; }
+.editorial-note { font-size: 0.85rem; color: #555; border-top: 1px solid #e1e4e8; padding-top: 1rem; margin-top: 2rem; }
 .related-posts { background: #f8f9fa; border-radius: 8px; padding: 1rem 1.5rem; margin-top: 2rem; }
 .related-posts h3 { margin-top: 0; }
 .ad-container { min-height: 90px; }
+@media (prefers-color-scheme: dark) {
+  .pr-notice, .related-posts { background: #1f242c; color: #c9d1d9; }
+  .aff-box, .amazon-search { background: #2a2614; border-color: #6b5a1e; }
+  .editorial-note, .aff-note { color: #aab4c0; }
+}
 </style>

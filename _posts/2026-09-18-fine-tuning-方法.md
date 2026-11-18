@@ -11,6 +11,8 @@ tags:
   - 方法
 author: "AIテックラボ編集部"
 image: "/assets/images/fine-tuning-方法.png"
+redirect_from:
+  - "/テクノロジー/2026/09/20/fine-tuning-方法.html"
 ---
 
 ## 目次
@@ -128,31 +130,3 @@ A：QLoRAならCPUのみでも可能です。ただ学習速度は非常に緩�
 
 Q4: Fine-tuningの学習時間はどれくらいか？
 A：データセット1万ペア程度で、LoRAの場合約2〜4時間（A100 8GB GPU）、全量学習だと1日以上かかります。
-<div class="amazon-search">
-  <form action="https://www.amazon.co.jp/search" method="get" target="_blank">
-    <input type="hidden" name="tag" value="aitechblog-22">
-    <input type="text" name="field-keywords" placeholder="Amazonで検索">
-    <button type="submit">検索</button>
-  </form>
-</div>
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "Fine-tuning方法を徹底解説：LLMの性能をどうやって最適化するか",
-  "description": "LLMの性能を大幅に引き上げるFine-tuning方法を完全指南。LoRA、全量学習、データ作成のポイント、評価手法などを実践事例付きで詳しく解説します。",
-  "author": {
-    "@type": "Organization",
-    "name": "AIテックラボ編集部"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "AIテックラボ",
-    "url": "https://rukigfsh-cmd.github.io/ai-tech-blog"
-  },
-  "datePublished": "2026-09-18",
-  "url": "https://rukigfsh-cmd.github.io/ai-tech-blog/posts/fine-tuning-方法"
-}
-</script>

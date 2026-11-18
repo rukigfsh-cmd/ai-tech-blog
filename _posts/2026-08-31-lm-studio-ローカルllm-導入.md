@@ -12,6 +12,8 @@ tags:
   - 導入
 author: "AIテックラボ編集部"
 image: "/assets/images/lm-studio-ローカルllm-導入.png"
+redirect_from:
+  - "/ai/2026/09/03/lm-studio-ローカルllm-導入.html"
 ---
 
 ## 目次

@@ -1,48 +1,65 @@
 title: AIテックラボ
-description: 最新AI・ガジェット・テクノロジーを徹底解説
+description: AI・ガジェット・テクノロジーの使い方を、調べて確かめてわかりやすく解説するブログ
 url: "https://rukigfsh-cmd.github.io"
 baseurl: "/ai-tech-blog"
 
 lang: ja
+locale: ja_JP
 timezone: Asia/Tokyo
 encoding: utf-8
 
 # テーマ（GitHub Pages対応）
 theme: minima
 
-# プラグイン
+# プラグイン（GitHub Pages で使えるものだけ）
 plugins:
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-seo-tag
+  - jekyll-redirect-from
 
 # Minima設定
 minima:
   skin: auto
+  date_format: "%Y年%m月%d日"
 
-# ページネーション
-paginate: 10
-paginate_path: "/page:num/"
+# ヘッダーのメニュー
+header_pages:
+  - archive.html
+  - about.md
+  - privacy.md
+  - contact.md
 
-# 除外ファイル
+# 公開しないファイル（稼ぎエンジンの運用ファイルはサイトに出さない）
 exclude:
+  - automation
+  - hq
+  - README.md
   - Gemfile
   - Gemfile.lock
+  - vendor
   - "*.bat"
   - "*.py"
 
 # SEO設定
 author:
   name: AIテックラボ編集部
-  email: ""
 
-# ソーシャルリンク（任意）
-twitter_username: ""
-github_username: ""
+social:
+  name: AIテックラボ
+
+# 記事の既定値
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+      author: AIテックラボ編集部
 
 # Analytics（後で追加）
 google_analytics: ""
 
-# AdSense（後で追加）
+# AdSense（独自ドメイン取得・審査通過後に設定）
 adsense_publisher_id: ""
 adsense_ad_slot: ""

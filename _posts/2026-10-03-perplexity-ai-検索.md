@@ -1,6 +1,6 @@
 ---
 layout: "post"
-title: "Perplexity AI 検索とは？完全なガイドブック"
+title: "Perplexity AIとは？検索での使い方と注意点"
 date: "2026-10-03 00:00:00 +0900"
 description: "Perplexity AI 検索について詳しく解説します。"
 categories:
@@ -85,31 +85,3 @@ A：はい、Web ブラウザからアクセス可能です。ただし、AI の
 
 Q：セキュリティ上の懸念はないか？
 A：Perplexity はユーザーのクエリを暗号化して送信し、プライバシー保護に力を入れています。ただし、オープンソースLLM なので、完全に閉じたシステム（例：AirGapped PC）ほど安全とは言い難いです。
-<div class="amazon-search">
-  <form action="https://www.amazon.co.jp/search" method="get" target="_blank">
-    <input type="hidden" name="tag" value="aitechblog-22">
-    <input type="text" name="field-keywords" placeholder="Amazonで検索">
-    <button type="submit">検索</button>
-  </form>
-</div>
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "Perplexity AI 検索とは？完全なガイドブック",
-  "description": "Perplexity AI 検索について詳しく解説します。",
-  "author": {
-    "@type": "Organization",
-    "name": "AIテックラボ編集部"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "AIテックラボ",
-    "url": "https://rukigfsh-cmd.github.io/ai-tech-blog"
-  },
-  "datePublished": "2026-10-03",
-  "url": "https://rukigfsh-cmd.github.io/ai-tech-blog/posts/perplexity-ai-検索"
-}
-</script>

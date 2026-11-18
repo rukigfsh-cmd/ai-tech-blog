@@ -1,0 +1,1327 @@
+<title>稼ぎエンジン</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&display=swap">
+<style>
+/* Layout: one-screen app — sticky top bar, one scrolling view, fixed bottom tab bar.
+   Concept: 通帳（passbook paper, ledger numerals）× 伝票（task slips stamped 済 in 朱）. */
+:root {
+  --paper: #ECEFE8;
+  --sheet: #FAFBF7;
+  --ink: #16202B;
+  --ink-2: #4D5866;
+  --ink-3: #6F7A88;
+  --rule: #CBD3C8;
+  --rule-2: #DFE4DB;
+  --ai: #22407E;
+  --ai-ink: #FFFFFF;
+  --ai-soft: #DFE6F4;
+  --bar: #B7C4E2;
+  --shu: #BF3F2A;
+  --on-shu: #FFFFFF;
+  --gain: #1C7A4B;
+  --gain-soft: #DCEFE3;
+  --warn: #93600F;
+  --warn-soft: #F4E8D2;
+  --line: rgba(34, 64, 126, 0.07);
+  --f-display: "Dela Gothic One", "BIZ UDPGothic", "Hiragino Sans", system-ui, sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+  --f-num: "BIZ UDGothic", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 12px;
+  --tabbar-h: 62px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E131A; --sheet: #151C25; --ink: #E4E9EF; --ink-2: #A3AEBC; --ink-3: #8794A5;
+    --rule: #2A3443; --rule-2: #202937; --ai: #93ADF3; --ai-ink: #0E131A; --ai-soft: #1D2942; --bar: #34466E;
+    --shu: #F2826B; --on-shu: #1A0E0B; --gain: #5BC88D; --gain-soft: #15301F; --warn: #E3A84C; --warn-soft: #33270F;
+    --line: rgba(147, 173, 243, 0.06);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E131A; --sheet: #151C25; --ink: #E4E9EF; --ink-2: #A3AEBC; --ink-3: #8794A5;
+  --rule: #2A3443; --rule-2: #202937; --ai: #93ADF3; --ai-ink: #0E131A; --ai-soft: #1D2942; --bar: #34466E;
+  --shu: #F2826B; --on-shu: #1A0E0B; --gain: #5BC88D; --gain-soft: #15301F; --warn: #E3A84C; --warn-soft: #33270F;
+  --line: rgba(147, 173, 243, 0.06);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+button, input, textarea, select { font: inherit; color: inherit; }
+a { color: var(--ai); }
+h1, h2, h3 { text-wrap: balance; }
+
+/* Top bar */
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.topbar-in {
+  max-width: 680px; margin: 0 auto;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mark {
+  width: 30px; height: 30px; flex: none;
+  border: 2px solid var(--shu); color: var(--shu); border-radius: 6px;
+  display: grid; place-items: center;
+  font: 17px/1 var(--f-display); transform: rotate(-5deg);
+}
+.brand-name { font: 19px/1 var(--f-display); letter-spacing: 0.02em; white-space: nowrap; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; line-height: 1; padding: 6px 10px; border-radius: 999px;
+  background: var(--rule-2); color: var(--ink-2); white-space: nowrap;
+}
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.good { background: var(--gain-soft); color: var(--gain); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.ai { background: var(--ai-soft); color: var(--ai); }
+.pill.off::before { opacity: 0.5; }
+
+/* Main */
+main {
+  max-width: 680px; margin: 0 auto;
+  padding-block: 18px calc(var(--tabbar-h) + 28px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.v-title { font: 24px/1.25 var(--f-display); margin: 4px 0 6px; letter-spacing: 0.02em; }
+.v-lead { margin: 0 0 16px; color: var(--ink-2); font-size: 14px; }
+.sec {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  margin: 28px 0 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-2);
+}
+.sec:first-child { margin-top: 0; }
+.stack { display: grid; gap: 10px; }
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: 16px; }
+.sub { font-size: 11.5px; color: var(--ink-3); letter-spacing: 0.06em; margin-bottom: 4px; }
+.meta { font-size: 12.5px; color: var(--ink-3); }
+.foot { margin: 28px 0 0; text-align: center; font-size: 12px; color: var(--ink-3); }
+.link {
+  appearance: none; background: none; border: 0; padding: 4px 0; cursor: pointer;
+  color: var(--ai); font-size: 13.5px; font-weight: 700; text-decoration: none;
+}
+.grid-gap { display: grid; gap: 8px; }
+
+/* Ledger (passbook) */
+.ledger {
+  position: relative; overflow: hidden;
+  background-color: var(--sheet);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--line) 31px 32px);
+  border: 1px solid var(--rule); border-radius: var(--r);
+  padding: 16px 18px 12px;
+}
+.ledger-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); letter-spacing: 0.08em; }
+.amount {
+  font-family: var(--f-num); font-weight: 700; font-variant-numeric: tabular-nums;
+  font-size: clamp(36px, 12vw, 50px); line-height: 1.15; letter-spacing: -0.01em; margin-top: 4px;
+}
+.amount .yen { font-size: 0.55em; color: var(--ink-2); margin-right: 3px; }
+.ledger-row { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.ledger-row b { font-family: var(--f-num); color: var(--ink); }
+.progress { height: 6px; border-radius: 3px; background: var(--rule-2); margin-top: 10px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--gain); }
+.months { display: block; width: 100%; height: auto; margin-top: 10px; }
+.months .bar { fill: var(--bar); }
+.months .bar.now { fill: var(--ai); }
+.months .axis { stroke: var(--rule); stroke-width: 1; }
+.months text { fill: var(--ink-3); font-family: var(--f-num); font-size: 10px; }
+.months text.val { fill: var(--ink); font-weight: 700; }
+
+/* Your turn */
+.turn-sum { margin: 0 0 8px; font-size: 14px; color: var(--ink-2); }
+.turn-sum b { font-family: var(--f-num); font-size: 20px; color: var(--ink); }
+.turn-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.turn-item {
+  appearance: none; width: 100%; background: none; border: 0; border-top: 1px dashed var(--rule);
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 10px 0; text-align: left; cursor: pointer;
+}
+.turn-title { font-weight: 700; font-size: 14.5px; min-width: 0; }
+
+/* Slip (task) */
+.slip {
+  position: relative; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r);
+  padding: 14px 14px 12px 30px;
+}
+.slip::before { content: ""; position: absolute; left: 15px; top: 12px; bottom: 12px; border-left: 2px dotted var(--rule); }
+.slip.is-done, .slip.is-skipped { background: transparent; }
+.slip.is-skipped h3 { color: var(--ink-2); }
+.slip-top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; padding-right: 54px; }
+.slip h3, .idea h3 { font-size: 16px; line-height: 1.45; margin: 2px 0 4px; }
+.why { font-size: 13.5px; color: var(--ink-2); margin: 0 0 4px; }
+.kind {
+  font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: 0.1em; white-space: nowrap;
+  color: var(--ai); border: 1.5px solid var(--ai); border-radius: 3px; padding: 3px 4px 3px 5px;
+}
+.chip {
+  font-family: var(--f-num); font-size: 12px; line-height: 1; white-space: nowrap;
+  color: var(--ink-2); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 8px;
+}
+.chip.good { color: var(--gain); background: var(--gain-soft); border-color: transparent; font-family: var(--f-body); white-space: normal; }
+.chip.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.stamp {
+  position: absolute; right: 14px; top: 12px; width: 56px; height: 56px;
+  border: 3px solid var(--shu); color: var(--shu); border-radius: 50%;
+  display: grid; place-items: center; font: 25px/1 var(--f-display);
+  transform: rotate(-14deg); opacity: 0.88; pointer-events: none;
+}
+.stamp.anim { animation: stamp 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes stamp { from { transform: scale(1.9) rotate(-2deg); opacity: 0; } to { transform: scale(1) rotate(-14deg); opacity: 0.88; } }
+.details { margin-top: 10px; border-top: 1px dashed var(--rule); padding-top: 12px; display: grid; gap: 14px; }
+.steps { margin: 0; padding-left: 1.35em; }
+.steps li { margin: 3px 0; font-size: 14px; }
+.copyrow {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start;
+  background: var(--paper); border-radius: 8px; padding: 8px 8px 8px 10px;
+}
+.copyrow .lbl { font-size: 11px; color: var(--ink-3); }
+.copyrow .txt { font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
+.linkrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.answer { background: var(--paper); border-radius: 8px; padding: 8px 10px; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.warnline { flex-basis: 100%; margin: 0; font-size: 13.5px; color: var(--warn); }
+
+/* Buttons & fields */
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.btn {
+  appearance: none; cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 42px; padding: 10px 14px; border-radius: 10px;
+  font-size: 14px; font-weight: 700; line-height: 1.2;
+  border: 1px solid var(--rule); background: var(--sheet); color: var(--ink);
+}
+.btn.primary { background: var(--ai); border-color: var(--ai); color: var(--ai-ink); }
+.btn.danger { background: transparent; border-color: var(--shu); color: var(--shu); }
+.btn.ghost { background: transparent; }
+.btn.small { min-height: 36px; padding: 7px 11px; font-size: 13px; }
+.btn.block { width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn:focus-visible, .tab:focus-visible, .link:focus-visible, .turn-item:focus-visible, .seg button:focus-visible,
+input:focus-visible, textarea:focus-visible, select:focus-visible, .pb-row:focus-visible, .chipbtn:focus-visible {
+  outline: 2px solid var(--ai); outline-offset: 2px;
+}
+.f { display: grid; gap: 5px; font-size: 12.5px; color: var(--ink-2); min-width: 0; }
+.f.wide { grid-column: 1 / -1; flex-basis: 100%; }
+input, textarea, select {
+  width: 100%; min-width: 0;
+  font-size: 16px; line-height: 1.45;
+  background: var(--sheet); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px;
+}
+textarea { min-height: 88px; resize: vertical; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 380px) { .form-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Segmented control */
+.seg {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px;
+  background: var(--rule-2); border-radius: 10px; padding: 3px; margin-bottom: 14px;
+}
+.seg button {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  padding: 9px 2px; border-radius: 8px; font-size: 12.5px; font-weight: 700; color: var(--ink-2); white-space: nowrap;
+}
+.seg button[aria-pressed="true"] { background: var(--sheet); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+.seg .n { font-family: var(--f-num); font-weight: 400; margin-left: 3px; }
+
+/* Ideas */
+.idea { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: 14px; }
+.idea-top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.score { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; }
+.score .sub { margin: 0; }
+.score .track { flex: 1; height: 6px; background: var(--rule-2); border-radius: 3px; overflow: hidden; }
+.score .track i { display: block; height: 100%; background: var(--ai); }
+.score b { font-family: var(--f-num); font-size: 16px; min-width: 2em; text-align: right; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 10px 0 4px; }
+@media (max-width: 420px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.metric { background: var(--paper); border-radius: 8px; padding: 7px 9px; min-width: 0; }
+.metric .k { font-size: 11px; color: var(--ink-3); }
+.metric .v { font-family: var(--f-num); font-weight: 700; font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; }
+.kv { margin: 8px 0 0; font-size: 13.5px; }
+.kv .sub { display: block; }
+.sources { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 13px; }
+.sources .sub { flex-basis: 100%; margin: 0; }
+.sources a { overflow-wrap: anywhere; }
+
+/* Passbook */
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sumcell { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.sumcell .k { font-size: 11.5px; color: var(--ink-3); }
+.sumcell .v { font-family: var(--f-num); font-weight: 700; font-size: clamp(15px, 4.6vw, 19px); overflow-wrap: anywhere; }
+.bars { display: grid; gap: 8px; }
+.bars .row { display: grid; grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 13px; }
+.bars .track { height: 10px; background: var(--rule-2); border-radius: 5px; overflow: hidden; }
+.bars .track i { display: block; height: 100%; background: var(--gain); border-radius: 5px; }
+.bars .num { font-family: var(--f-num); font-weight: 700; }
+.passbook { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
+.pb-head, .pb-row {
+  display: grid; grid-template-columns: 3.4em minmax(0, 1fr) auto; gap: 10px; align-items: start;
+  padding: 9px 12px;
+}
+.pb-head { font-size: 11px; letter-spacing: 0.08em; color: var(--ink-3); background: var(--paper); border-bottom: 2px solid var(--ink); }
+.pb-head span:last-child { text-align: right; }
+.pb-row {
+  width: 100%; appearance: none; background: none; border: 0; border-bottom: 1px solid var(--rule-2);
+  text-align: left; cursor: pointer; font-size: 13.5px;
+}
+.pb-date { font-family: var(--f-num); color: var(--ink-2); }
+.pb-desc { min-width: 0; overflow-wrap: anywhere; }
+.pb-desc small { display: block; color: var(--ink-3); font-size: 12px; }
+.pb-amt { text-align: right; font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.pb-amt b { display: block; color: var(--gain); }
+.pb-amt small { color: var(--ink-3); font-size: 11.5px; }
+.pb-month { padding: 5px 12px; font-size: 11.5px; letter-spacing: 0.08em; color: var(--ai); background: var(--ai-soft); }
+.pb-del { padding: 8px 12px 12px; border-bottom: 1px solid var(--rule-2); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* Channels, runs, messages */
+.ch-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px dashed var(--rule); }
+.ch-row:first-child { border-top: 0; padding-top: 0; }
+.ch-row:last-child { padding-bottom: 0; }
+.ch-name { font-weight: 700; font-size: 14px; min-width: 0; }
+.ch-name small { display: block; font-weight: 400; color: var(--ink-3); font-size: 12px; }
+.ch-side { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.ch-metric { font-family: var(--f-num); font-size: 12.5px; color: var(--ink-2); }
+.strategy { white-space: pre-wrap; font-size: 14px; }
+.run h3 { font-size: 15.5px; margin: 6px 0 6px; line-height: 1.45; }
+.run ul { margin: 0; padding-left: 1.2em; font-size: 13.5px; }
+.run li { margin: 2px 0; }
+.run .issues li { color: var(--warn); }
+.run-top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.msg { display: grid; gap: 6px; }
+.bubble { max-width: 88%; padding: 10px 12px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; }
+.bubble.me { justify-self: end; background: var(--ai); color: var(--ai-ink); border-bottom-right-radius: 4px; }
+.bubble.ai { justify-self: start; background: var(--sheet); border: 1px solid var(--rule); border-bottom-left-radius: 4px; }
+.bubble-meta { font-size: 11.5px; color: var(--ink-3); }
+.bubble-meta.me { justify-self: end; }
+.chat { display: grid; gap: 8px; margin-bottom: 12px; }
+.chipbtn {
+  appearance: none; cursor: pointer; border: 1px solid var(--rule); background: var(--sheet); color: var(--ink);
+  border-radius: 999px; padding: 8px 12px; font-size: 13px;
+}
+.suggest { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.composer { display: grid; gap: 8px; }
+.composer .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.okline { color: var(--gain); font-size: 13.5px; margin: 10px 0 0; }
+.errline { color: var(--shu); font-size: 13.5px; margin: 10px 0 0; }
+
+/* States */
+.empty {
+  text-align: center; color: var(--ink-2); font-size: 13.5px;
+  padding: 26px 16px; border: 1.5px dashed var(--rule); border-radius: var(--r);
+}
+.empty b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+.notice { background: var(--warn-soft); color: var(--ink); border-radius: var(--r); padding: 12px 14px; margin-bottom: 14px; font-size: 13.5px; }
+.notice b { display: block; color: var(--warn); }
+.skel { height: 74px; border-radius: var(--r); background: var(--rule-2); opacity: 0.6; }
+.skel + .skel { margin-top: 10px; }
+
+/* Tab bar */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: var(--sheet); border-top: 1px solid var(--rule);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(8px, env(safe-area-inset-left, 0px));
+  padding-right: max(8px, env(safe-area-inset-right, 0px));
+}
+.tabbar-in { max-width: 680px; margin: 0 auto; height: var(--tabbar-h); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.tab {
+  appearance: none; border: 0; background: none; cursor: pointer; position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  color: var(--ink-3); font-size: 11px; font-weight: 700;
+}
+.tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-current="page"] { color: var(--ai); }
+.tab[aria-current="page"]::before {
+  content: ""; position: absolute; top: 0; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--ai);
+}
+.badge {
+  position: absolute; top: 5px; left: calc(50% + 5px);
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--shu); color: var(--on-shu);
+  font: 700 11px/18px var(--f-num); text-align: center;
+}
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 14px);
+  transform: translateX(-50%); z-index: 20; max-width: calc(100% - 32px);
+  background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 10px; font-size: 14px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+#toast.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .stamp.anim { animation: none; }
+  #toast { transition: none; }
+}
+</style>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark" aria-hidden="true">稼</span><span class="brand-name">稼ぎエンジン</span></div>
+    <div id="status"><span class="pill off">読み込み中</span></div>
+  </div>
+</header>
+
+<main id="view">
+  <div class="empty"><b>読み込み中…</b>やること・稼ぎ案・収益・Claudeのレポートがここに表示されます。</div>
+</main>
+
+<nav class="tabbar" aria-label="画面の切り替え">
+  <div class="tabbar-in">
+    <button class="tab" data-view="home" type="button"><span class="ico" data-icon="home"></span>ホーム<span class="badge" hidden></span></button>
+    <button class="tab" data-view="tasks" type="button"><span class="ico" data-icon="tasks"></span>やること<span class="badge" hidden></span></button>
+    <button class="tab" data-view="ideas" type="button"><span class="ico" data-icon="ideas"></span>稼ぎ案<span class="badge" hidden></span></button>
+    <button class="tab" data-view="money" type="button"><span class="ico" data-icon="money"></span>収益<span class="badge" hidden></span></button>
+    <button class="tab" data-view="claude" type="button"><span class="ico" data-icon="claude"></span>Claude<span class="badge" hidden></span></button>
+  </div>
+</nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- constants ----------
+  var VIEWS = ["home", "tasks", "ideas", "money", "claude"];
+  var KIND = { account: "登録", listing: "出品", decision: "判断", review: "確認", input: "入力", other: "作業" };
+  var IDEA_STATUS = { proposed: "承認待ち", approved: "承認済み", active: "進行中", paused: "一時停止", rejected: "見送り", done: "完了" };
+  var RISK = { low: "低", mid: "中", high: "高" };
+  var CH_STATUS = { active: "稼働中", setup: "準備中", idea: "構想", paused: "停止中" };
+  var RUN_KIND = { daily: "日次", weekly: "週次", manual: "手動", setup: "初期設定" };
+  var RUN_STATUS = { ok: "完了", partial: "一部完了", error: "失敗" };
+  var MSG_STATUS = { "new": "Claude未確認", seen: "確認済み", done: "対応済み" };
+  var SOURCES = ["Amazonアソシエイト", "楽天アフィリエイト", "A8.net", "もしもアフィリエイト", "Google AdSense", "BOOTH", "note", "ココナラ", "Kindle", "その他"];
+  var SERVER = "Claude Code Remote";
+  var TZ = "Asia/Tokyo";
+  var ICONS = {
+    home: '<path d="M3.5 11.5 12 4.5l8.5 7"/><path d="M5.8 10v9.5h12.4V10"/><path d="M10 19.5v-5h4v5"/>',
+    tasks: '<rect x="4.5" y="3.5" width="15" height="17" rx="2"/><path d="m8.2 9.2 1.6 1.6 3.4-3.4"/><path d="M8.5 15h7"/>',
+    ideas: '<path d="M9.2 18h5.6"/><path d="M10.2 21h3.6"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.3 1 2.2h5.2c0-.9.4-1.7 1-2.2A6 6 0 0 0 12 3z"/>',
+    money: '<path d="M6.5 4 12 11.5 17.5 4"/><path d="M12 11.5V20"/><path d="M7.5 13.2h9"/><path d="M7.5 16.6h9"/>',
+    claude: '<path d="M4 5.5h16v10.5H9.5L5 19.8V16H4z"/><path d="M8.6 10.8h.01M12 10.8h.01M15.4 10.8h.01"/>'
+  };
+
+  // ---------- state ----------
+  var S = {
+    view: "home", taskFilter: "todo", ideaFilter: "proposed", claudeTab: "ask",
+    tasks: [], ideas: [], revenue: [], runs: [], messages: [], products: [],
+    state: null, profile: null,
+    loaded: {}, ready: false, slow: false, noDb: false, dbError: "",
+    db: null, user: null, mcp: null, sample: null, downloads: null,
+    sampleDisabled: false, notOwner: false,
+    expanded: new Set(), pending: new Set(), confirmEmpty: new Set(), skipAsk: new Set(),
+    drafts: {}, chat: [], chatBusy: false, chatLive: "", chatCtl: null, chatError: "",
+    runBusy: false, runMsg: null, sched: null, schedBusy: false
+  };
+
+  // ---------- utils ----------
+  var dayFmt = new Intl.DateTimeFormat("sv-SE", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+  var dtFmt = new Intl.DateTimeFormat("ja-JP", { timeZone: TZ, month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  var numFmt = new Intl.NumberFormat("ja-JP");
+  function today() { return dayFmt.format(new Date()); }
+  function addDays(ymd, n) { return dayFmt.format(new Date(Date.parse(ymd + "T12:00:00+09:00") + n * 86400000)); }
+  function nowIso() { return new Date().toISOString(); }
+  function fmtNum(n) { return numFmt.format(Math.round(Number(n) || 0)); }
+  function fmtYen(n) { return "¥" + fmtNum(n); }
+  function fmtShort(n) { n = Number(n) || 0; return n >= 10000 ? (Math.round(n / 1000) / 10) + "万" : fmtNum(n); }
+  function md(s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ""); return m ? (+m[2]) + "/" + (+m[3]) : ""; }
+  function dt(iso) { var d = new Date(iso); return isNaN(d) ? "" : dtFmt.format(d); }
+  function ago(iso) {
+    var t = Date.parse(iso); if (isNaN(t)) return "";
+    var m = Math.round((Date.now() - t) / 60000);
+    if (m < 1) return "たった今"; if (m < 60) return m + "分前";
+    var hr = Math.round(m / 60); if (hr < 24) return hr + "時間前";
+    return Math.round(hr / 24) + "日前";
+  }
+  function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+  function safeUrl(u) { u = String(u || ""); return /^https?:\/\//i.test(u) ? u : null; }
+  function hostOf(u) { try { return new URL(u).hostname; } catch (e) { return u; } }
+  function rangeYen(lo, hi) {
+    var a = Number(lo), b = Number(hi);
+    if (isNaN(a) && isNaN(b)) return "—";
+    if (isNaN(b) || a === b) return fmtYen(a);
+    return fmtShort(a) + "〜" + fmtShort(b) + "円";
+  }
+  function byScore(a, b) { return (Number(b.score) || 0) - (Number(a.score) || 0); }
+  function str(v) { return v == null ? "" : String(v); }
+  function arr(v) { return Array.isArray(v) ? v : []; }
+  function $(sel) { return document.querySelector(sel); }
+
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (k) {
+        var v = props[k];
+        if (v == null || v === false) return;
+        if (k === "class") el.className = v;
+        else if (k === "style") el.style.cssText = v;
+        else if (k === "value") el.value = v;
+        else if (k.slice(0, 2) === "on" && typeof v === "function") el.addEventListener(k.slice(2), v);
+        else el.setAttribute(k, v === true ? "" : String(v));
+      });
+    }
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function append(el, kid) {
+    if (kid == null || kid === false) return;
+    if (Array.isArray(kid)) { kid.forEach(function (k) { append(el, k); }); return; }
+    el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+  function svg(tag, attrs) {
+    var el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.keys(attrs || {}).forEach(function (k) { el.setAttribute(k, String(attrs[k])); });
+    return el;
+  }
+  function field(tag, id, initial, attrs) {
+    var p = Object.assign({ id: id }, attrs || {});
+    var el = h(tag, p);
+    el.value = S.drafts[id] != null ? S.drafts[id] : str(initial);
+    el.addEventListener("input", function () { S.drafts[id] = el.value; });
+    return el;
+  }
+  function selectField(id, options, initial) {
+    var el = h("select", { id: id }, options.map(function (o) { return h("option", { value: o }, o); }));
+    el.value = S.drafts[id] != null ? S.drafts[id] : initial;
+    el.addEventListener("change", function () { S.drafts[id] = el.value; });
+    return el;
+  }
+  function draft(id, fallback) { return S.drafts[id] != null ? S.drafts[id] : str(fallback); }
+  function clearDraft(id) { delete S.drafts[id]; }
+
+  var toastTimer = 0;
+  function toast(msg) {
+    var t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2600);
+  }
+  function reducedMotion() { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+
+  // ---------- derived ----------
+  function isOpen(t) { return !t.status || t.status === "todo" || (t.status === "snoozed" && str(t.snoozeUntil) <= today()); }
+  function isSnoozed(t) { return t.status === "snoozed" && str(t.snoozeUntil) > today(); }
+  function taskSort(a, b) {
+    return (Number(a.priority) || 2) - (Number(b.priority) || 2)
+      || str(a.due || "9999").localeCompare(str(b.due || "9999"))
+      || ((Number(b.valueYen) || 0) / (Number(b.minutes) || 10) - (Number(a.valueYen) || 0) / (Number(a.minutes) || 10))
+      || str(a.createdAt).localeCompare(str(b.createdAt));
+  }
+  function openTasks() { return S.tasks.filter(isOpen).sort(taskSort); }
+  function monthOf(ymd) { return str(ymd).slice(0, 7); }
+  function prevMonth(ym) { return addDays(ym + "-01", -1).slice(0, 7); }
+  function revenueStats() {
+    var tm = monthOf(today()), lm = prevMonth(tm);
+    var r = { tm: tm, lm: lm, thisM: 0, lastM: 0, total: 0, byMonth: {}, bySource: {} };
+    S.revenue.forEach(function (x) {
+      var a = Number(x.amount) || 0, k = monthOf(x.date);
+      r.total += a; r.byMonth[k] = (r.byMonth[k] || 0) + a;
+      if (k === tm) { r.thisM += a; var s = x.source || x.channel || "その他"; r.bySource[s] = (r.bySource[s] || 0) + a; }
+      if (k === lm) r.lastM += a;
+    });
+    return r;
+  }
+
+  // ---------- db writes ----------
+  function dbErrorText(e) {
+    var c = e && e.code;
+    return ({
+      invalid_argument: "保存できませんでした。入力内容を確かめてください",
+      quota_exceeded: "保存できる量の上限です。古い記録を消してください",
+      resource_exhausted: "操作が続きすぎました。少し待ってからもう一度",
+      revoked: "アクセス権が変わりました。開き直してください",
+      unavailable: "通信が不安定です。もう一度お試しください"
+    })[c] || "保存できませんでした。もう一度お試しください";
+  }
+  function write(key, fn, okMsg) {
+    if (!S.db) { toast("claude.ai の中で開くと保存できます"); return Promise.resolve(false); }
+    if (S.pending.has(key)) return Promise.resolve(false);
+    S.pending.add(key); render();
+    return Promise.resolve().then(fn).then(function () {
+      if (okMsg) toast(okMsg);
+      return true;
+    }, function (e) { toast(dbErrorText(e)); return false; }).then(function (ok) {
+      S.pending.delete(key); render(); return ok;
+    });
+  }
+  function docRef(path) { return S.db.doc(path); }
+
+  function completeTask(t, card, force) {
+    var answer = draft("ans-" + t.id, t.answer).trim();
+    var note = draft("note-" + t.id, t.userNote).trim();
+    if (t.ask && !answer && !force) { S.confirmEmpty.add(t.id); render(); return; }
+    var go = function () {
+      write("t:" + t.id, function () {
+        return docRef("tasks/" + t.id).update({ status: "done", doneAt: nowIso(), updatedAt: nowIso(), answer: answer, userNote: note });
+      }, "完了にしました。Claudeが続きを引き継ぎます").then(function (ok) {
+        if (ok) { clearDraft("ans-" + t.id); clearDraft("note-" + t.id); S.expanded.delete(t.id); }
+      });
+    };
+    if (card && !reducedMotion()) {
+      var st = h("div", { class: "stamp anim", "aria-hidden": "true" }, "済");
+      card.append(st);
+      setTimeout(go, 620);
+    } else go();
+  }
+  function snoozeTask(t) {
+    write("t:" + t.id, function () {
+      return docRef("tasks/" + t.id).update({ status: "snoozed", snoozeUntil: addDays(today(), 1), updatedAt: nowIso(), userNote: draft("note-" + t.id, t.userNote).trim() });
+    }, "明日また表示します");
+  }
+  function skipTask(t) {
+    var reason = draft("skip-" + t.id, "").trim();
+    write("t:" + t.id, function () {
+      return docRef("tasks/" + t.id).update({ status: "skipped", userNote: reason || draft("note-" + t.id, t.userNote).trim(), updatedAt: nowIso() });
+    }, "やらないことにしました").then(function (ok) { if (ok) { S.skipAsk.delete(t.id); clearDraft("skip-" + t.id); } });
+  }
+  function reopenTask(t) {
+    write("t:" + t.id, function () {
+      return docRef("tasks/" + t.id).update({ status: "todo", updatedAt: nowIso(), processedAt: null });
+    }, "未完了に戻しました");
+  }
+  function saveAnswer(t) {
+    var answer = draft("ans-" + t.id, t.answer).trim();
+    write("t:" + t.id, function () {
+      return docRef("tasks/" + t.id).update({ answer: answer, userNote: draft("note-" + t.id, t.userNote).trim(), updatedAt: nowIso() });
+    }, "保存しました");
+  }
+  function decide(i, status) {
+    var note = draft("inote-" + i.id, i.userNote).trim();
+    var msg = { approved: "GO！Claudeが次の実行で着手します", rejected: "見送りにしました", paused: "一時停止しました", active: "再開しました" }[status];
+    write("i:" + i.id, function () {
+      return docRef("ideas/" + i.id).update({ status: status, decidedAt: nowIso(), updatedAt: nowIso(), userNote: note });
+    }, msg);
+  }
+  function saveIdeaNote(i) {
+    write("i:" + i.id, function () {
+      return docRef("ideas/" + i.id).update({ userNote: draft("inote-" + i.id, i.userNote).trim(), updatedAt: nowIso() });
+    }, "メモを保存しました").then(function (ok) { if (ok) S.expanded.delete("inote:" + i.id); });
+  }
+  function addRevenue() {
+    var amount = Math.round(Number(draft("rv-amount", "")));
+    var date = draft("rv-date", today());
+    if (!(amount > 0)) { toast("金額を入れてください"); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast("日付を選んでください"); return; }
+    var source = draft("rv-source", SOURCES[0]);
+    var note = draft("rv-note", "").trim();
+    write("rv:add", function () {
+      return S.db.collection("revenue").add({ date: date, amount: amount, source: source, channel: source, note: note, createdBy: "user", createdAt: nowIso() });
+    }, fmtYen(amount) + " を記帳しました").then(function (ok) { if (ok) { clearDraft("rv-amount"); clearDraft("rv-note"); } });
+  }
+  function deleteRevenue(r) {
+    write("rv:" + r.id, function () { return docRef("revenue/" + r.id).delete(); }, "記録を削除しました")
+      .then(function (ok) { if (ok) S.expanded.delete("rv:" + r.id); });
+  }
+  function sendMessage(text, done) {
+    text = str(text).trim();
+    if (!text) { toast("内容を書いてください"); return; }
+    write("msg:add", function () {
+      return S.db.collection("messages").add({ text: text, from: "user", status: "new", createdAt: nowIso() });
+    }, "送りました。次の実行でClaudeが対応します").then(function (ok) { if (ok && done) done(); });
+  }
+  function saveProfile() {
+    var p = S.profile || {};
+    var ids = Object.assign({}, p.ids || {});
+    ids.amazonTag = draft("pf-amazon", ids.amazonTag).trim();
+    ids.rakutenId = draft("pf-rakuten", ids.rakutenId).trim();
+    ids.a8Id = draft("pf-a8", ids.a8Id).trim();
+    var next = Object.assign({}, p, {
+      weeklyMinutes: Number(draft("pf-minutes", p.weeklyMinutes)) || 0,
+      goalMonthly: Number(draft("pf-goal", p.goalMonthly)) || 0,
+      interests: draft("pf-interests", p.interests).trim(),
+      skills: draft("pf-skills", p.skills).trim(),
+      avoid: draft("pf-avoid", p.avoid).trim(),
+      contactEmail: draft("pf-email", p.contactEmail).trim(),
+      notes: draft("pf-notes", p.notes).trim(),
+      ids: ids,
+      updatedAt: nowIso()
+    });
+    write("pf", function () { return docRef("meta/profile").set(next); }, "設定を保存しました").then(function (ok) {
+      if (ok) ["pf-amazon", "pf-rakuten", "pf-a8", "pf-minutes", "pf-goal", "pf-interests", "pf-skills", "pf-avoid", "pf-email", "pf-notes"].forEach(clearDraft);
+    });
+  }
+
+  // ---------- clipboard, files ----------
+  function copyText(text, btn, node) {
+    try {
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = "コピー済み"; setTimeout(function () { btn.textContent = "コピー"; }, 1600);
+      }, function () { selectNode(node); toast("選択しました。長押しでコピーしてください"); });
+    } catch (e) { selectNode(node); toast("選択しました。長押しでコピーしてください"); }
+  }
+  function selectNode(node) {
+    try { var r = document.createRange(); r.selectNodeContents(node); var s = getSelection(); s.removeAllRanges(); s.addRange(r); } catch (e) { /* ignore */ }
+  }
+  function saveFile(f) {
+    var id = str(f.assetId);
+    if (!/^[0-9a-f]{32}$/.test(id)) { toast("ファイルが見つかりません"); return; }
+    if (!S.downloads) { toast("この画面では保存できません。claude.ai のアプリかブラウザで開いてください"); return; }
+    fetch("/_blob/" + id).then(function (res) {
+      if (!res.ok) throw { code: "fetch" };
+      return res.blob();
+    }).then(function (blob) {
+      return S.downloads.save({ filename: f.filename || "file.pdf", data: blob });
+    }).then(function () { toast("ファイルを渡しました"); }, function (e) {
+      if (e && e.code === "declined") return;
+      toast(e && e.code === "fetch" ? "ファイルを読み込めませんでした" : "保存できませんでした");
+    });
+  }
+
+  // ---------- Claude Code Remote (run now) ----------
+  function mcpErrorText(e) {
+    var c = e && e.code;
+    if (c === "server_not_connected" || c === "server_not_found") return "Claude Code Remote が接続されていません（claude.ai の設定 → コネクタ）。毎日の自動実行はいつもどおり動きます。";
+    if (c === "needs_reauth") return "Claude Code Remote の再接続が必要です（claude.ai の設定 → コネクタ）。";
+    if (c === "not_in_manifest" || c === "approval_required" || c === "consent_required") return "このアプリからの実行が許可されていません。もう一度押すと許可を求められます。";
+    if (c === "blocked_by_policy") return "組織の設定で、この操作は使えません。";
+    if (c === "selection_required") return "使う接続先を選んでから、もう一度押してください。";
+    if (c === "tool_error") return "起動できませんでした: " + str(e.message).slice(0, 160);
+    if (c === "not_granted" || c === "capability_disabled" || c === "capability_removed") return "この画面からは起動できません。毎日の自動実行はいつもどおり動きます。";
+    return "接続できませんでした。少し待ってからもう一度お試しください。";
+  }
+  function runNow() {
+    var tid = S.state && S.state.triggerId;
+    if (!tid) { S.runMsg = { ok: false, text: "自動実行の設定がまだ届いていません。" }; render(); return; }
+    if (!S.mcp) { S.runMsg = { ok: false, text: "この画面からは起動できません。毎日の自動実行はいつもどおり動きます。" }; render(); return; }
+    var input = { trigger_id: tid };
+    var extra = draft("run-extra", "").trim();
+    if (extra) input.text = "オーナーからの追加指示（HQアプリより）: " + extra;
+    S.runBusy = true; S.runMsg = null; render();
+    S.mcp.callTool(SERVER, "fire_trigger", input).then(function () {
+      S.runMsg = { ok: true, text: "Claudeを起動しました。終わるとレポートが届きます（数十分かかることがあります）。" };
+      clearDraft("run-extra");
+      try { localStorage.setItem("kasegi.lastManual", nowIso()); } catch (e) { /* ignore */ }
+    }, function (e) { S.runMsg = { ok: false, text: mcpErrorText(e) }; }).then(function () { S.runBusy = false; render(); });
+  }
+  function checkSchedule() {
+    var tid = S.state && S.state.triggerId;
+    if (!tid || !S.mcp) { S.sched = { err: "この画面からは確認できません。" }; render(); return; }
+    S.schedBusy = true; render();
+    S.mcp.callTool(SERVER, "get_trigger", { trigger_id: tid }).then(function (res) {
+      var p = res && res.payload; var t = (p && (p.trigger || p)) || {};
+      var last = t.last_run || {};
+      S.sched = { next: t.next_run_at, enabled: t.enabled, lastStatus: last.status, lastAt: last.fired_at || last.finished_at };
+    }, function (e) { S.sched = { err: mcpErrorText(e) }; }).then(function () { S.schedBusy = false; render(); });
+  }
+
+  // ---------- Ask Claude (sample) ----------
+  function contextText() {
+    var st = revenueStats();
+    var open = openTasks().slice(0, 8).map(function (t) { return "- " + str(t.title) + "（約" + (t.minutes || "?") + "分）"; }).join("\n") || "なし";
+    var ideas = S.ideas.filter(function (i) { return ["proposed", "approved", "active"].indexOf(i.status) >= 0; }).sort(byScore).slice(0, 8)
+      .map(function (i) { return "- [" + (IDEA_STATUS[i.status] || i.status) + "] " + str(i.title) + "（スコア" + str(i.score) + "、見込み月" + rangeYen(i.monthlyLow, i.monthlyHigh) + "）"; }).join("\n") || "なし";
+    var p = S.profile || {};
+    var run = S.runs[0] ? str(S.runs[0].headline) : "まだなし";
+    return [
+      "■収益: 今月" + fmtYen(st.thisM) + "、先月" + fmtYen(st.lastM) + "、累計" + fmtYen(st.total),
+      "■オーナー: 週に使える時間 " + (p.weeklyMinutes || "未設定") + "分、月の目標 " + (p.goalMonthly ? fmtYen(p.goalMonthly) : "未設定") + "、興味 " + (p.interests || "未設定") + "、避けたいこと " + (p.avoid || "未設定"),
+      "■未完了のやること:\n" + open,
+      "■稼ぎ案:\n" + ideas,
+      "■最新の自動実行: " + run,
+      "■しくみ: ブログ「AIテックラボ」（GitHub Pages）を Claude が毎日更新・改善し、アフィリエイト・デジタル商品などで収益化を目指している。"
+    ].join("\n");
+  }
+  function rules() {
+    return "あなたは「稼ぎエンジン」というアプリの中にいる相談役の Claude です。オーナーは、手間を最小にして副収入をつくりたい個人です。\n"
+      + "・日本語で、短く具体的に答える（300字程度まで。必要なら箇条書き）。\n"
+      + "・違法なこと、規約違反、根拠のない収益の約束、ギャンブル的な投資、借入はすすめない。\n"
+      + "・あなたはWebを見られない。最新情報が必要なら正直にそう言い、「Claudeに頼む」から依頼すれば次の自動実行で調べられると案内する。\n"
+      + "・実行してほしいことは「Claudeに頼む」へ送れば、毎日動く Claude が対応すると案内してよい。\n\n"
+      + "現在の状況:\n" + contextText();
+  }
+  function sampleErrorText(code) {
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].indexOf(code) >= 0) { S.sampleDisabled = true; return "この画面では相談機能を使えません。"; }
+    return ({
+      rate_limited: "混み合っています。少し時間をおいてからどうぞ。",
+      session_expired: "もう一度サインインしてください。",
+      refused: "この内容には答えられませんでした。聞き方を変えてみてください。",
+      prompt_too_large: "会話が長くなりました。「会話をクリア」してから聞き直してください。",
+      empty_completion: "答えが空でした。聞き方を変えてみてください。"
+    })[code] || "答えを受け取れませんでした。もう一度お試しください。";
+  }
+  function askClaude(q) {
+    q = str(q).trim();
+    if (!q || S.chatBusy || !S.sample) return;
+    S.chat.push({ role: "user", content: q });
+    clearDraft("chat-in");
+    S.chatBusy = true; S.chatLive = ""; S.chatError = "";
+    S.chatCtl = new AbortController();
+    render();
+    var turns = [{ role: "user", content: rules() }].concat(S.chat.slice(-12));
+    S.sample(turns, {
+      cache: false,
+      signal: S.chatCtl.signal,
+      onText: function (u) { S.chatLive = u.text; var el = document.getElementById("chat-live"); if (el) el.textContent = u.text; }
+    }).then(function (res) {
+      S.chat.push({ role: "assistant", content: res.text + (res.truncated ? "\n（長いので途中までです）" : "") });
+    }, function (e) {
+      if (e && e.text) S.chat.push({ role: "assistant", content: e.text + "\n（途中で止まりました）" });
+      if (!e || e.code !== "cancelled") S.chatError = sampleErrorText(e && e.code);
+    }).then(function () { S.chatBusy = false; S.chatLive = ""; S.chatCtl = null; render(); });
+  }
+
+  // ---------- small components ----------
+  function sec(title, right) { return h("div", { class: "sec" }, h("span", null, title), right || null); }
+  function empty(title, body) { return h("div", { class: "empty" }, h("b", null, title), body || null); }
+  function skeleton(n) { var out = []; for (var i = 0; i < n; i++) out.push(h("div", { class: "skel", "aria-hidden": "true" })); return out; }
+  function notice(title, body) { return h("div", { class: "notice", role: "status" }, h("b", null, title), body || null); }
+  function chip(text, cls) { return h("span", { class: "chip" + (cls ? " " + cls : "") }, text); }
+  function metric(k, v) { return h("div", { class: "metric" }, h("div", { class: "k" }, k), h("div", { class: "v" }, v)); }
+  function kv(k, v) { return h("p", { class: "kv" }, h("span", { class: "sub" }, k), str(v)); }
+  function go(view, sub) {
+    if (sub) S.claudeTab = sub;
+    if (location.hash !== "#" + view) location.hash = view; else { S.view = view; render(); }
+  }
+  function copyRow(label, text) {
+    var txt = h("div", { class: "txt" }, str(text));
+    var btn = h("button", { class: "btn small", type: "button" }, "コピー");
+    btn.addEventListener("click", function () { copyText(str(text), btn, txt); });
+    return h("div", { class: "copyrow" }, h("div", { style: "min-width:0" }, h("div", { class: "lbl" }, str(label)), txt), btn);
+  }
+  function statusPill() {
+    if (S.noDb) return h("span", { class: "pill off" }, "オフライン");
+    if (!S.ready) return h("span", { class: "pill off" }, "読み込み中");
+    var last = S.state && S.state.lastRunAt;
+    if (!last) return h("span", { class: "pill ai" }, "準備中");
+    var hrs = (Date.now() - Date.parse(last)) / 36e5;
+    return hrs < 36 ? h("span", { class: "pill good", title: "最終実行 " + dt(last) }, "稼働中・" + ago(last))
+      : h("span", { class: "pill warn", title: "最終実行 " + dt(last) }, "要確認・" + ago(last));
+  }
+  function chClass(s) { return s === "active" ? "good" : s === "paused" ? "warn" : s === "setup" ? "ai" : "off"; }
+  function ideaClass(s) { return s === "active" || s === "approved" ? "good" : s === "proposed" ? "ai" : s === "paused" ? "warn" : "off"; }
+
+  function monthsChart(st) {
+    var keys = [], k = st.tm;
+    for (var i = 0; i < 6; i++) { keys.unshift(k); k = prevMonth(k); }
+    var vals = keys.map(function (m) { return st.byMonth[m] || 0; });
+    var max = Math.max.apply(null, vals.concat([1]));
+    var W = 300, H = 64, bw = 30, gap = (W - 6 * bw) / 5;
+    var el = svg("svg", { viewBox: "0 -12 " + W + " " + (H + 28), class: "months", role: "img",
+      "aria-label": "月別の入金: " + keys.map(function (m, j) { return (+m.slice(5)) + "月 " + fmtYen(vals[j]); }).join("、") });
+    el.append(svg("line", { x1: 0, x2: W, y1: H, y2: H, class: "axis" }));
+    keys.forEach(function (m, j) {
+      var v = vals[j], bh = v ? Math.max(3, Math.round(v / max * (H - 6))) : 0, x = j * (bw + gap);
+      if (bh) el.append(svg("rect", { x: x, y: H - bh, width: bw, height: bh, rx: 3, class: j === 5 ? "bar now" : "bar" }));
+      var t = svg("text", { x: x + bw / 2, y: H + 14, "text-anchor": "middle" }); t.textContent = (+m.slice(5)) + "月"; el.append(t);
+      if (v && (j === 5 || v === max)) { var tv = svg("text", { x: x + bw / 2, y: H - bh - 4, "text-anchor": "middle", class: "val" }); tv.textContent = fmtShort(v); el.append(tv); }
+    });
+    return el;
+  }
+  function ledgerCard() {
+    var st = revenueStats();
+    var goal = Number(S.profile && S.profile.goalMonthly) || 0;
+    var pct = goal ? clamp(Math.round(st.thisM / goal * 100), 0, 100) : 0;
+    return h("section", { class: "ledger", "aria-label": "今月の入金" },
+      h("div", { class: "ledger-top" }, h("span", null, (+st.tm.slice(5)) + "月の入金"), h("span", null, "通帳")),
+      h("div", { class: "amount" }, h("span", { class: "yen" }, "¥"), fmtNum(st.thisM)),
+      h("div", { class: "ledger-row" },
+        h("span", null, "先月 ", h("b", null, fmtYen(st.lastM))),
+        h("span", null, "累計 ", h("b", null, fmtYen(st.total))),
+        goal ? h("span", null, "目標 ", h("b", null, fmtYen(goal)), "（" + pct + "%）") : null),
+      goal ? h("div", { class: "progress", role: "progressbar", "aria-label": "今月の目標の達成率", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(pct) }, h("i", { style: "width:" + pct + "%" })) : null,
+      monthsChart(st));
+  }
+  function runCard(r, compact) {
+    var did = arr(r.did), pub = arr(r.published).filter(function (p) { return safeUrl(p.url); }), issues = arr(r.issues);
+    return h("article", { class: "card run" },
+      h("div", { class: "run-top" },
+        h("span", { class: "meta" }, dt(r.finishedAt || r.startedAt)),
+        r.kind ? chip(RUN_KIND[r.kind] || r.kind) : null,
+        r.status ? h("span", { class: "pill " + (r.status === "ok" ? "good" : r.status === "error" ? "warn" : "ai") }, RUN_STATUS[r.status] || r.status) : null),
+      h("h3", null, str(r.headline) || "実行レポート"),
+      did.length ? h("ul", null, (compact ? did.slice(0, 4) : did).map(function (d) { return h("li", null, str(d)); })) : null,
+      compact && did.length > 4 ? h("p", { class: "meta" }, "ほか " + (did.length - 4) + " 件") : null,
+      pub.length ? h("div", { class: "sources" }, h("span", { class: "sub" }, "公開したもの"), pub.map(function (p) { return h("a", { href: safeUrl(p.url), target: "_blank", rel: "noopener noreferrer" }, str(p.title) || hostOf(p.url)); })) : null,
+      !compact && issues.length ? h("ul", { class: "issues" }, issues.map(function (d) { return h("li", null, str(d)); })) : null,
+      (r.newTasks || r.newIdeas) ? h("p", { class: "meta" }, "新しいやること " + (r.newTasks || 0) + "件・稼ぎ案 " + (r.newIdeas || 0) + "件") : null);
+  }
+
+  // ---------- task card ----------
+  function taskDetails(t) {
+    var d = h("div", { class: "details" });
+    var steps = arr(t.steps);
+    if (steps.length) d.append(h("div", null, h("div", { class: "sub" }, "手順"), h("ol", { class: "steps" }, steps.map(function (s) { return h("li", null, str(s)); }))));
+    var copies = arr(t.copy);
+    if (copies.length) d.append(h("div", { class: "grid-gap" }, h("div", { class: "sub" }, "コピーして貼り付け"), copies.map(function (c) { return copyRow(c.label, c.text); })));
+    var links = arr(t.links).filter(function (l) { return safeUrl(l.url); });
+    if (links.length) d.append(h("div", { class: "linkrow" }, links.map(function (l) { return h("a", { class: "btn small", href: safeUrl(l.url), target: "_blank", rel: "noopener noreferrer" }, (str(l.label) || "開く") + " ↗"); })));
+    var files = arr(t.files).filter(function (f) { return /^[0-9a-f]{32}$/.test(str(f.assetId)); });
+    if (files.length) d.append(h("div", { class: "linkrow" }, files.map(function (f) {
+      return h("button", { class: "btn small", type: "button", onclick: function () { saveFile(f); } }, "保存: " + (str(f.label) || str(f.filename) || "ファイル"));
+    })));
+    var closed = t.status === "done" || t.status === "skipped";
+    if (t.ask && !closed) {
+      var aid = "ans-" + t.id;
+      d.append(h("div", { class: "grid-gap" },
+        h("label", { class: "f", for: aid }, str(t.ask.label) || "入力", field(t.ask.multiline ? "textarea" : "input", aid, t.answer, { placeholder: str(t.ask.placeholder), autocomplete: "off" })),
+        h("div", null, h("button", { class: "btn small", type: "button", disabled: S.pending.has("t:" + t.id), onclick: function () { saveAnswer(t); } }, "入力だけ保存"))));
+    } else if (t.answer) {
+      d.append(h("div", null, h("div", { class: "sub" }, "あなたの入力"), h("div", { class: "answer" }, str(t.answer))));
+    }
+    if (!closed) {
+      var nid = "note-" + t.id;
+      d.append(h("label", { class: "f", for: nid }, "Claudeへのメモ（任意）", field("input", nid, t.userNote, { placeholder: "例: 登録したけど審査待ち" })));
+    } else if (t.userNote) {
+      d.append(h("div", null, h("div", { class: "sub" }, "あなたのメモ"), h("div", { class: "answer" }, str(t.userNote))));
+    }
+    return d;
+  }
+  function taskCard(t) {
+    var open = S.expanded.has(t.id), busy = S.pending.has("t:" + t.id);
+    var done = t.status === "done", skipped = t.status === "skipped";
+    var card = h("article", { class: "slip" + (done ? " is-done" : "") + (skipped ? " is-skipped" : ""), id: "task-" + t.id });
+    card.append(h("div", { class: "slip-top" },
+      h("span", { class: "kind" }, KIND[t.kind] || "作業"),
+      t.minutes ? chip("約" + t.minutes + "分") : null,
+      t.due ? chip("期限 " + md(t.due), str(t.due) <= addDays(today(), 2) ? "warn" : "") : null,
+      t.valueNote ? chip(str(t.valueNote), "good") : null));
+    card.append(h("h3", null, str(t.title) || "（無題）"));
+    if (t.why) card.append(h("p", { class: "why" }, str(t.why)));
+    if (done) card.append(h("div", { class: "stamp", "aria-hidden": "true" }, "済"));
+    card.append(h("button", { class: "link", type: "button", "aria-expanded": String(open), onclick: function () {
+      if (open) S.expanded.delete(t.id); else S.expanded.add(t.id); render();
+    } }, open ? "閉じる" : (done || skipped ? "内容を見る" : "手順を見る")));
+    if (open) card.append(taskDetails(t));
+    var acts = h("div", { class: "actions" });
+    if (!done && !skipped) {
+      if (S.confirmEmpty.has(t.id)) {
+        acts.append(h("p", { class: "warnline" }, "「" + (str(t.ask && t.ask.label) || "入力欄") + "」が空です。このまま完了にしますか？"),
+          h("button", { class: "btn primary", type: "button", disabled: busy, onclick: function () { S.confirmEmpty.delete(t.id); completeTask(t, card, true); } }, "このまま完了"),
+          h("button", { class: "btn ghost", type: "button", onclick: function () { S.confirmEmpty.delete(t.id); S.expanded.add(t.id); render(); } }, "入力する"));
+      } else if (S.skipAsk.has(t.id)) {
+        var sid = "skip-" + t.id;
+        acts.append(h("label", { class: "f wide", for: sid }, "やらない理由（任意。Claudeが次から参考にします）", field("input", sid, "", { placeholder: "例: お金がかかるので今はやめておく" })),
+          h("button", { class: "btn danger", type: "button", disabled: busy, onclick: function () { skipTask(t); } }, "やらないで確定"),
+          h("button", { class: "btn ghost", type: "button", onclick: function () { S.skipAsk.delete(t.id); render(); } }, "戻る"));
+      } else {
+        acts.append(h("button", { class: "btn primary", type: "button", disabled: busy, onclick: function () { completeTask(t, card); } }, "完了にする"),
+          h("button", { class: "btn ghost", type: "button", disabled: busy, onclick: function () { snoozeTask(t); } }, "あとで"),
+          h("button", { class: "btn ghost", type: "button", disabled: busy, onclick: function () { S.skipAsk.add(t.id); render(); } }, "やらない"));
+      }
+    } else {
+      acts.append(h("span", { class: "meta" }, (done ? "完了 " + dt(t.doneAt) : "やらないことにしました") + (t.processedAt ? "・Claude確認済み" : "・Claudeの確認待ち")),
+        h("button", { class: "btn ghost small", type: "button", disabled: busy, onclick: function () { reopenTask(t); } }, "元に戻す"));
+    }
+    card.append(acts);
+    return card;
+  }
+
+  // ---------- idea card ----------
+  function ideaCard(i, compact) {
+    var busy = S.pending.has("i:" + i.id);
+    var card = h("article", { class: "idea" });
+    card.append(h("div", { class: "idea-top" }, h("span", { class: "pill " + ideaClass(i.status) }, IDEA_STATUS[i.status] || str(i.status)), i.channel ? chip(str(i.channel)) : null));
+    card.append(h("h3", null, str(i.title) || "（無題）"));
+    var sc = clamp(Number(i.score) || 0, 0, 100);
+    card.append(h("div", { class: "score", role: "img", "aria-label": "スコア " + sc + " / 100" },
+      h("span", { class: "sub" }, "スコア"), h("div", { class: "track" }, h("i", { style: "width:" + sc + "%" })), h("b", null, String(sc))));
+    if (i.summary) card.append(h("p", { class: "why" }, str(i.summary)));
+    card.append(h("div", { class: "metrics" },
+      metric("見込み月収", rangeYen(i.monthlyLow, i.monthlyHigh)),
+      metric("あなたの手間", i.userMinutesWeek != null ? "週" + i.userMinutesWeek + "分" : "—"),
+      metric("自動化", i.automation != null ? i.automation + "%" : "—"),
+      metric("初期費用", i.startCostYen != null ? fmtYen(i.startCostYen) : "—"),
+      metric("リスク", RISK[i.risk] || "—"),
+      metric("初収益まで", str(i.firstYen) || "—")));
+    if (!compact) {
+      if (i.why) card.append(kv("理由", i.why));
+      if (i.nextStep) card.append(kv("次の一手", i.nextStep));
+      if (i.riskNote) card.append(kv("注意点", i.riskNote));
+      var src = arr(i.sources).filter(function (s) { return safeUrl(s.url); });
+      if (src.length) card.append(h("div", { class: "sources" }, h("span", { class: "sub" }, "根拠"), src.map(function (s) { return h("a", { href: safeUrl(s.url), target: "_blank", rel: "noopener noreferrer" }, str(s.title) || hostOf(s.url)); })));
+      if (i.userNote) card.append(kv("あなたのメモ", i.userNote));
+    }
+    var acts = h("div", { class: "actions" }), st = i.status;
+    if (st === "proposed") {
+      acts.append(h("button", { class: "btn primary", type: "button", disabled: busy, onclick: function () { decide(i, "approved"); } }, "GO（進める）"),
+        h("button", { class: "btn ghost", type: "button", disabled: busy, onclick: function () { decide(i, "rejected"); } }, "見送り"));
+    } else if (st === "active" || st === "approved") {
+      acts.append(h("button", { class: "btn ghost", type: "button", disabled: busy, onclick: function () { decide(i, "paused"); } }, "一時停止"));
+    } else if (st === "paused") {
+      acts.append(h("button", { class: "btn primary", type: "button", disabled: busy, onclick: function () { decide(i, "active"); } }, "再開"),
+        h("button", { class: "btn ghost", type: "button", disabled: busy, onclick: function () { decide(i, "rejected"); } }, "やめる"));
+    } else if (st === "rejected") {
+      acts.append(h("button", { class: "btn ghost", type: "button", disabled: busy, onclick: function () { decide(i, "approved"); } }, "やっぱり進める"));
+    }
+    if (!compact) {
+      var key = "inote:" + i.id, nopen = S.expanded.has(key);
+      acts.append(h("button", { class: "link", type: "button", "aria-expanded": String(nopen), onclick: function () { if (nopen) S.expanded.delete(key); else S.expanded.add(key); render(); } }, nopen ? "メモを閉じる" : "メモを残す"));
+      card.append(acts);
+      if (nopen) {
+        var nid = "inote-" + i.id;
+        card.append(h("div", { class: "grid-gap", style: "margin-top:10px" },
+          h("label", { class: "f", for: nid }, "Claudeへのメモ", field("input", nid, i.userNote, { placeholder: "例: 予算は月1,000円まで" })),
+          h("div", null, h("button", { class: "btn small", type: "button", disabled: busy, onclick: function () { saveIdeaNote(i); } }, "メモを保存"))));
+      }
+    } else card.append(acts);
+    return card;
+  }
+
+  // ---------- views ----------
+  function stateNotices(out) {
+    if (S.noDb) out.push(notice("claude.ai の中で開いてください", "データはあなたの claude.ai アカウントに保存されています。このページを claude.ai のアプリかブラウザで開くと使えます。"));
+    else if (S.notOwner) out.push(notice("このアプリはオーナー専用です", "中身はオーナーにだけ表示されます。"));
+    else if (S.dbError) out.push(notice("データを読み込めませんでした", S.dbError));
+    else if (S.slow && !S.ready) out.push(notice("データにまだ接続できません", "通信状態を確かめて、しばらく待ってみてください。"));
+  }
+  function viewHome() {
+    var out = [];
+    stateNotices(out);
+    out.push(ledgerCard());
+
+    var open = openTasks();
+    var mins = open.reduce(function (a, t) { return a + (Number(t.minutes) || 0); }, 0);
+    out.push(sec("あなたの番", open.length ? h("button", { class: "link", type: "button", onclick: function () { go("tasks"); } }, "すべて見る") : null));
+    if (!S.ready && !S.noDb) out.push(skeleton(1));
+    else if (!open.length) out.push(empty("今やることはありません", "あなたの手が必要なことが出てきたら、Claudeがここに積んで通知します。"));
+    else out.push(h("div", { class: "card" },
+      h("p", { class: "turn-sum" }, h("b", null, open.length + "件"), "　合計 約" + mins + "分"),
+      h("ul", { class: "turn-list" }, open.slice(0, 3).map(function (t) {
+        return h("li", null, h("button", { class: "turn-item", type: "button", onclick: function () { S.expanded.add(t.id); S.taskFilter = "todo"; go("tasks"); } },
+          h("span", { class: "kind" }, KIND[t.kind] || "作業"), h("span", { class: "turn-title" }, str(t.title) || "（無題）"), chip((t.minutes || "?") + "分")));
+      }))));
+
+    out.push(sec("Claudeの最新レポート", S.runs.length ? h("button", { class: "link", type: "button", onclick: function () { go("claude", "runs"); } }, "記録を見る") : null));
+    if (!S.ready && !S.noDb) out.push(skeleton(1));
+    else if (!S.runs.length) out.push(empty("まだレポートはありません", "毎日の自動実行が終わると、やったことがここに届きます。"));
+    else out.push(runCard(S.runs[0], true));
+
+    var props = S.ideas.filter(function (i) { return i.status === "proposed"; }).sort(byScore).slice(0, 2);
+    out.push(sec("承認待ちの稼ぎ案", S.ideas.length ? h("button", { class: "link", type: "button", onclick: function () { go("ideas"); } }, "すべて見る") : null));
+    if (S.ready && !props.length) out.push(empty("承認待ちの案はありません", "Claudeが毎日リサーチして、良さそうな稼ぎ方をここに出します。"));
+    else if (props.length) out.push(h("div", { class: "stack" }, props.map(function (i) { return ideaCard(i, true); })));
+
+    var ch = arr(S.state && S.state.channels);
+    if (ch.length) {
+      out.push(sec("しくみの稼働状況"));
+      out.push(h("div", { class: "card" }, ch.map(function (c) {
+        return h("div", { class: "ch-row" },
+          h("div", { class: "ch-name" }, str(c.name || c.key), c.note ? h("small", null, str(c.note)) : null),
+          h("div", { class: "ch-side" }, c.metric ? h("span", { class: "ch-metric" }, str(c.metric)) : null, h("span", { class: "pill " + chClass(c.status) }, CH_STATUS[c.status] || str(c.status) || "—")));
+      })));
+    }
+    if (S.state && S.state.strategy) { out.push(sec("いまの方針")); out.push(h("div", { class: "card strategy" }, str(S.state.strategy))); }
+    out.push(h("p", { class: "foot" }, "このアプリの中身はあなた専用です。ほかの人には見えません。"));
+    return out;
+  }
+
+  function viewTasks() {
+    var groups = {
+      todo: openTasks(),
+      later: S.tasks.filter(isSnoozed).sort(taskSort),
+      done: S.tasks.filter(function (t) { return t.status === "done"; }).sort(function (a, b) { return str(b.doneAt).localeCompare(str(a.doneAt)); }),
+      skipped: S.tasks.filter(function (t) { return t.status === "skipped"; })
+    };
+    var labels = { todo: "未完了", later: "あとで", done: "完了", skipped: "やらない" };
+    var f = S.taskFilter, list = groups[f] || [];
+    var out = [h("h1", { class: "v-title" }, "やること"),
+      h("p", { class: "v-lead" }, "あなたにしかできない作業だけが積まれます。終わったら「完了にする」を押すと、Claudeが続きを引き継ぎます。")];
+    stateNotices(out);
+    out.push(h("div", { class: "seg", role: "group", "aria-label": "表示する作業" }, Object.keys(labels).map(function (k) {
+      return h("button", { type: "button", "aria-pressed": String(f === k), onclick: function () { S.taskFilter = k; render(); } }, labels[k], h("span", { class: "n" }, String(groups[k].length)));
+    })));
+    if (!S.ready && !S.noDb) out.push(skeleton(3));
+    else if (!list.length) out.push(empty(f === "todo" ? "今やることはありません" : "「" + labels[f] + "」はありません", f === "todo" ? "Claudeが必要な作業を見つけたら、ここに追加して通知します。" : null));
+    else out.push(h("div", { class: "stack" }, list.map(taskCard)));
+    return out;
+  }
+
+  function viewIdeas() {
+    var match = {
+      proposed: function (i) { return i.status === "proposed"; },
+      active: function (i) { return ["approved", "active", "paused"].indexOf(i.status) >= 0; },
+      closed: function (i) { return ["rejected", "done"].indexOf(i.status) >= 0; },
+      all: function () { return true; }
+    };
+    var labels = { proposed: "承認待ち", active: "進行中", closed: "終了", all: "すべて" };
+    var f = S.ideaFilter, list = S.ideas.filter(match[f]).sort(byScore);
+    var out = [h("h1", { class: "v-title" }, "稼ぎ案"),
+      h("p", { class: "v-lead" }, "Claudeが毎日リサーチした稼ぎ方です。スコアは見込み収益・あなたの手間・自動化しやすさ・費用・リスクから計算しています。「GO」でClaudeが着手します。")];
+    stateNotices(out);
+    out.push(h("div", { class: "seg", role: "group", "aria-label": "表示する稼ぎ案" }, Object.keys(labels).map(function (k) {
+      return h("button", { type: "button", "aria-pressed": String(f === k), onclick: function () { S.ideaFilter = k; render(); } }, labels[k], h("span", { class: "n" }, String(S.ideas.filter(match[k]).length)));
+    })));
+    if (!S.ready && !S.noDb) out.push(skeleton(2));
+    else if (!list.length) out.push(empty(f === "proposed" ? "承認待ちの案はありません" : "「" + labels[f] + "」の案はありません", f === "proposed" ? "新しい案は毎日のリサーチで追加されます。" : null));
+    else out.push(h("div", { class: "stack" }, list.map(function (i) { return ideaCard(i, false); })));
+    return out;
+  }
+
+  function viewMoney() {
+    var st = revenueStats();
+    var out = [h("h1", { class: "v-title" }, "収益"),
+      h("p", { class: "v-lead" }, "入金があったら記帳してください。Claudeが次の一手を決める材料にします。")];
+    stateNotices(out);
+    out.push(h("div", { class: "summary" },
+      h("div", { class: "sumcell" }, h("div", { class: "k" }, "今月"), h("div", { class: "v" }, fmtYen(st.thisM))),
+      h("div", { class: "sumcell" }, h("div", { class: "k" }, "先月"), h("div", { class: "v" }, fmtYen(st.lastM))),
+      h("div", { class: "sumcell" }, h("div", { class: "k" }, "累計"), h("div", { class: "v" }, fmtYen(st.total)))));
+
+    out.push(sec("記帳する"));
+    out.push(h("form", { class: "card", onsubmit: function (e) { e.preventDefault(); addRevenue(); } },
+      h("div", { class: "form-grid" },
+        h("label", { class: "f", for: "rv-amount" }, "金額（円）", field("input", "rv-amount", "", { type: "number", inputmode: "numeric", min: "1", step: "1", placeholder: "1200" })),
+        h("label", { class: "f", for: "rv-date" }, "入金日", field("input", "rv-date", today(), { type: "date" })),
+        h("label", { class: "f wide", for: "rv-source" }, "入金元", selectField("rv-source", SOURCES, SOURCES[0])),
+        h("label", { class: "f wide", for: "rv-note" }, "メモ（任意）", field("input", "rv-note", "", { placeholder: "例: 10月分の紹介料" }))),
+      h("div", { class: "actions" }, h("button", { class: "btn primary", type: "submit", disabled: S.pending.has("rv:add") }, "記帳する"))));
+
+    var srcs = Object.keys(st.bySource).sort(function (a, b) { return st.bySource[b] - st.bySource[a]; });
+    if (srcs.length) {
+      var mx = st.bySource[srcs[0]] || 1;
+      out.push(sec("今月の内訳"));
+      out.push(h("div", { class: "card bars" }, srcs.map(function (s) {
+        return h("div", { class: "row" }, h("span", null, s), h("div", { class: "track" }, h("i", { style: "width:" + Math.max(3, Math.round(st.bySource[s] / mx * 100)) + "%" })), h("span", { class: "num" }, fmtYen(st.bySource[s])));
+      })));
+    }
+
+    out.push(sec("通帳"));
+    if (!S.ready && !S.noDb) { out.push(skeleton(2)); return out; }
+    if (!S.revenue.length) { out.push(empty("まだ入金はありません", "最初の入金があったら、上のフォームから記帳しましょう。")); return out; }
+    var rows = S.revenue.slice().sort(function (a, b) { return str(a.date).localeCompare(str(b.date)) || str(a.createdAt).localeCompare(str(b.createdAt)); });
+    var bal = 0, lastM = "", body = [];
+    rows.forEach(function (r) {
+      bal += Number(r.amount) || 0;
+      var m = monthOf(r.date);
+      if (m !== lastM) { body.push(h("div", { class: "pb-month" }, m.slice(0, 4) + "年" + (+m.slice(5)) + "月")); lastM = m; }
+      var key = "rv:" + r.id, open = S.expanded.has(key);
+      body.push(h("button", { class: "pb-row", type: "button", "aria-expanded": String(open), onclick: function () { if (open) S.expanded.delete(key); else S.expanded.add(key); render(); } },
+        h("span", { class: "pb-date" }, md(r.date)),
+        h("span", { class: "pb-desc" }, str(r.source || r.channel) || "入金", r.note ? h("small", null, str(r.note)) : null),
+        h("span", { class: "pb-amt" }, h("b", null, fmtYen(r.amount)), h("small", null, "残高 " + fmtYen(bal)))));
+      if (open) body.push(h("div", { class: "pb-del" },
+        h("span", { class: "meta" }, (r.createdBy === "claude" ? "Claudeが記帳" : "あなたが記帳") + "・" + dt(r.createdAt)),
+        h("button", { class: "btn danger small", type: "button", disabled: S.pending.has(key), onclick: function () { deleteRevenue(r); } }, "この記録を削除")));
+    });
+    out.push(h("div", { class: "passbook" }, h("div", { class: "pb-head" }, h("span", null, "日付"), h("span", null, "摘要"), h("span", null, "お預り／残高")), body));
+    return out;
+  }
+
+  function viewClaude() {
+    var labels = { ask: "頼む", chat: "相談", runs: "記録", prefs: "設定" };
+    var tab = S.claudeTab;
+    var out = [h("h1", { class: "v-title" }, "Claude"),
+      h("p", { class: "v-lead" }, "Claudeは毎日自動で動いています。頼みごと・相談・実行の記録・あなたの設定はここから。")];
+    stateNotices(out);
+    out.push(h("div", { class: "seg", role: "group", "aria-label": "Claudeの画面" }, Object.keys(labels).map(function (k) {
+      return h("button", { type: "button", "aria-pressed": String(tab === k), onclick: function () { S.claudeTab = k; render(); } }, labels[k]);
+    })));
+    if (tab === "ask") viewAsk(out);
+    else if (tab === "chat") viewChat(out);
+    else if (tab === "runs") viewRuns(out);
+    else viewPrefs(out);
+    return out;
+  }
+  function viewAsk(out) {
+    out.push(sec("Claudeに頼む"));
+    out.push(h("form", { class: "card composer", onsubmit: function (e) { e.preventDefault(); sendMessage(draft("msg-text", ""), function () { clearDraft("msg-text"); }); } },
+      h("label", { class: "f", for: "msg-text" }, "次の自動実行でClaudeにやってほしいこと", field("textarea", "msg-text", "", { placeholder: "例: Amazonアソシエイトに登録できたよ。IDは xxxx-22。関連記事に商品リンクを入れて" })),
+      h("div", { class: "row" }, h("button", { class: "btn primary", type: "submit", disabled: S.pending.has("msg:add") }, "送る"))));
+
+    var sched = (S.state && S.state.schedule) || "毎日早朝";
+    out.push(sec("今すぐ動かす"));
+    var lastManual = ""; try { lastManual = localStorage.getItem("kasegi.lastManual") || ""; } catch (e) { /* ignore */ }
+    var card = h("div", { class: "card grid-gap" },
+      h("p", { class: "why" }, "いつもは " + sched + " に自動で動きます。急ぎのときは今すぐ起動できます（あなたの Claude の利用枠を使います）。"),
+      h("label", { class: "f", for: "run-extra" }, "今回だけの追加指示（任意）", field("input", "run-extra", "", { placeholder: "例: 今日は商品づくりを優先して" })),
+      h("div", { class: "actions", style: "margin-top:0" },
+        h("button", { class: "btn primary", type: "button", disabled: S.runBusy, onclick: runNow }, S.runBusy ? "起動しています…" : "今すぐ実行する"),
+        h("button", { class: "btn ghost", type: "button", disabled: S.schedBusy, onclick: checkSchedule }, S.schedBusy ? "確認中…" : "次の実行を確認")),
+      lastManual ? h("p", { class: "meta" }, "前回の手動実行: " + dt(lastManual)) : null);
+    if (S.runMsg) card.append(h("p", { class: S.runMsg.ok ? "okline" : "errline" }, S.runMsg.text));
+    if (S.sched) {
+      if (S.sched.err) card.append(h("p", { class: "errline" }, S.sched.err));
+      else card.append(h("p", { class: "meta" }, "次の実行: " + (S.sched.next ? dt(S.sched.next) : "—") + (S.sched.enabled === false ? "（停止中）" : "") + (S.sched.lastStatus ? "・前回: " + S.sched.lastStatus + (S.sched.lastAt ? "（" + dt(S.sched.lastAt) + "）" : "") : "")));
+    }
+    out.push(card);
+
+    out.push(sec("頼んだこと"));
+    var mine = S.messages.filter(function (m) { return m.from !== "claude"; });
+    var fromClaude = S.messages.filter(function (m) { return m.from === "claude"; });
+    if (!S.ready && !S.noDb) out.push(skeleton(1));
+    else if (!S.messages.length) out.push(empty("まだ何も頼んでいません", "上の欄に書いて送ると、次の自動実行でClaudeが対応して返事をします。"));
+    else {
+      out.push(h("div", { class: "stack" }, S.messages.map(function (m) {
+        if (m.from === "claude") return h("div", { class: "card msg" }, h("span", { class: "bubble-meta" }, "Claudeから・" + dt(m.createdAt)), h("div", { class: "bubble ai" }, str(m.text)));
+        return h("div", { class: "card msg" },
+          h("span", { class: "bubble-meta me" }, dt(m.createdAt) + "・" + (MSG_STATUS[m.status] || "Claude未確認")),
+          h("div", { class: "bubble me" }, str(m.text)),
+          m.reply ? h("div", { class: "bubble ai" }, str(m.reply)) : null);
+      })));
+    }
+    return { mine: mine, fromClaude: fromClaude };
+  }
+  function viewChat(out) {
+    out.push(sec("Claudeに相談する"));
+    if (!S.sample || S.sampleDisabled) {
+      out.push(empty("この画面では相談機能を使えません", "claude.ai のアプリかブラウザで開くと使えます。頼みごとは「頼む」からいつでも送れます。"));
+      return;
+    }
+    out.push(h("p", { class: "v-lead" }, "今のやること・稼ぎ案・収益をふまえて、その場で答えます（あなたの Claude の利用枠を使います）。Webは見られないので、調べものは「頼む」から。"));
+    if (!S.chat.length && !S.chatBusy) {
+      out.push(h("div", { class: "suggest" }, ["今いちばん効く一手は？", "週30分でできる稼ぎ方は？", "未完了のやることを簡単に説明して", "お客さんへの丁寧な返信文を作って"].map(function (q) {
+        return h("button", { class: "chipbtn", type: "button", onclick: function () { askClaude(q); } }, q);
+      })));
+    }
+    var chat = h("div", { class: "chat" });
+    S.chat.forEach(function (m) { chat.append(h("div", { class: "bubble " + (m.role === "user" ? "me" : "ai") }, m.content)); });
+    if (S.chatBusy) chat.append(h("div", { class: "bubble ai", id: "chat-live" }, S.chatLive || "考え中…"));
+    out.push(chat);
+    if (S.chatError) out.push(h("p", { class: "errline" }, S.chatError));
+    var last = S.chat.length && S.chat[S.chat.length - 1];
+    out.push(h("form", { class: "composer", onsubmit: function (e) { e.preventDefault(); askClaude(draft("chat-in", "")); } },
+      field("textarea", "chat-in", "", { placeholder: "聞きたいことを書いてください", "aria-label": "Claudeへの質問" }),
+      h("div", { class: "row" },
+        S.chat.length && !S.chatBusy ? h("button", { class: "btn ghost small", type: "button", onclick: function () { S.chat = []; S.chatError = ""; render(); } }, "会話をクリア") : null,
+        last && last.role === "assistant" && !S.chatBusy ? h("button", { class: "btn ghost small", type: "button", disabled: S.pending.has("msg:add"), onclick: function () {
+          var q = ""; for (var j = S.chat.length - 2; j >= 0; j--) { if (S.chat[j].role === "user") { q = S.chat[j].content; break; } }
+          sendMessage("【相談メモ】\n質問: " + q + "\n回答: " + str(last.content).slice(0, 1500) + "\n→ これをふまえて対応をお願いします");
+        } }, "この内容をClaudeに頼む") : null,
+        S.chatBusy ? h("button", { class: "btn danger small", type: "button", onclick: function () { if (S.chatCtl) S.chatCtl.abort(); } }, "止める")
+          : h("button", { class: "btn primary", type: "submit" }, "送る"))));
+  }
+  function viewRuns(out) {
+    out.push(sec("実行の記録"));
+    if (!S.ready && !S.noDb) { out.push(skeleton(2)); return; }
+    if (!S.runs.length) { out.push(empty("まだ記録はありません", "自動実行が終わるたびに、ここに記録が残ります。")); return; }
+    out.push(h("div", { class: "stack" }, S.runs.map(function (r) { return runCard(r, false); })));
+  }
+  function viewPrefs(out) {
+    var p = S.profile || {}, ids = p.ids || {};
+    out.push(sec("あなたの設定"));
+    out.push(h("p", { class: "v-lead" }, "Claudeが稼ぎ方を選ぶときの前提になります。パスワードやカード番号は書かないでください。"));
+    out.push(h("form", { class: "card", onsubmit: function (e) { e.preventDefault(); saveProfile(); } },
+      h("div", { class: "form-grid" },
+        h("label", { class: "f", for: "pf-minutes" }, "1週間に使える時間（分）", field("input", "pf-minutes", p.weeklyMinutes || "", { type: "number", inputmode: "numeric", min: "0", placeholder: "60" })),
+        h("label", { class: "f", for: "pf-goal" }, "月の目標（円）", field("input", "pf-goal", p.goalMonthly || "", { type: "number", inputmode: "numeric", min: "0", placeholder: "30000" })),
+        h("label", { class: "f wide", for: "pf-interests" }, "興味があること・好きなジャンル", field("input", "pf-interests", p.interests, { placeholder: "例: PC、ガジェット、AI" })),
+        h("label", { class: "f wide", for: "pf-skills" }, "得意なこと・経験", field("input", "pf-skills", p.skills, { placeholder: "例: 接客、Excel、ゲーム" })),
+        h("label", { class: "f wide", for: "pf-avoid" }, "やりたくないこと", field("input", "pf-avoid", p.avoid, { placeholder: "例: 顔出し、電話、お金がかかること" })),
+        h("label", { class: "f wide", for: "pf-email" }, "お問い合わせ用メール（ブログに公開されます・任意）", field("input", "pf-email", p.contactEmail, { type: "email", autocomplete: "off", placeholder: "公開してよいアドレスだけ" })),
+        h("label", { class: "f", for: "pf-amazon" }, "AmazonアソシエイトのID", field("input", "pf-amazon", ids.amazonTag, { autocomplete: "off", placeholder: "xxxx-22" })),
+        h("label", { class: "f", for: "pf-rakuten" }, "楽天アフィリエイトID", field("input", "pf-rakuten", ids.rakutenId, { autocomplete: "off", placeholder: "英数字とピリオド" })),
+        h("label", { class: "f wide", for: "pf-a8" }, "A8.net のメディアID（任意）", field("input", "pf-a8", ids.a8Id, { autocomplete: "off" })),
+        h("label", { class: "f wide", for: "pf-notes" }, "Claudeに伝えておきたいこと", field("textarea", "pf-notes", p.notes, { placeholder: "例: 平日の夜しか作業できない" }))),
+      h("div", { class: "actions" },
+        h("button", { class: "btn primary", type: "submit", disabled: S.pending.has("pf") }, "保存する"),
+        p.updatedAt ? h("span", { class: "meta" }, "最終保存 " + dt(p.updatedAt)) : null)));
+    out.push(sec("このアプリについて"));
+    out.push(h("div", { class: "card why" },
+      "稼ぎエンジンは、Claudeが毎日自動で「リサーチ → ブログ記事や商品づくり → 公開 → 報告」を行い、あなたにしかできない作業だけを「やること」に積むしくみです。",
+      h("br"), h("br"),
+      "収益は保証されません。登録・本人確認・税金の申告など、法律上あなた自身が行う必要があることは、必ずあなたが確認してから進めてください。"));
+  }
+
+  var VIEW_FN = { home: viewHome, tasks: viewTasks, ideas: viewIdeas, money: viewMoney, claude: viewClaude };
+
+  // ---------- render ----------
+  var raf = 0;
+  function render() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; paint(); }); }
+  function paint() {
+    var a = document.activeElement, fid = a && a.id, s0 = null, s1 = null;
+    try { s0 = a.selectionStart; s1 = a.selectionEnd; } catch (e) { /* ignore */ }
+    $("#status").replaceChildren(statusPill());
+    document.querySelectorAll(".tab").forEach(function (b) {
+      var v = b.getAttribute("data-view");
+      b.setAttribute("aria-current", v === S.view ? "page" : "false");
+      var n = v === "tasks" ? openTasks().length : v === "ideas" ? S.ideas.filter(function (i) { return i.status === "proposed"; }).length : 0;
+      var badge = b.querySelector(".badge");
+      badge.hidden = !n; badge.textContent = n > 99 ? "99+" : String(n);
+      b.setAttribute("aria-label", b.textContent.replace(/\d+\+?$/, "").trim() + (n ? "（" + n + "件）" : ""));
+    });
+    var root = $("#view");
+    var nodes = VIEW_FN[S.view]();
+    root.replaceChildren.apply(root, nodes.filter(Boolean).reduce(function (acc, n) { return acc.concat(n); }, []));
+    if (fid) {
+      var el = document.getElementById(fid);
+      if (el && el !== document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) {
+        try { el.focus({ preventScroll: true }); if (s0 != null && el.setSelectionRange) el.setSelectionRange(s0, s1); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+  function routeFromHash() {
+    var v = (location.hash || "").replace(/^#/, "");
+    var next = VIEWS.indexOf(v) >= 0 ? v : "home";
+    if (next !== S.view) { S.view = next; window.scrollTo(0, 0); }
+    render();
+  }
+
+  // ---------- boot ----------
+  document.querySelectorAll(".ico").forEach(function (span) {
+    var s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("aria-hidden", "true");
+    s.innerHTML = ICONS[span.getAttribute("data-icon")] || "";
+    span.replaceWith(s);
+  });
+  document.querySelectorAll(".tab").forEach(function (b) {
+    b.addEventListener("click", function () { go(b.getAttribute("data-view")); });
+  });
+  window.addEventListener("hashchange", routeFromHash);
+  routeFromHash();
+
+  var C = window.claude;
+  if (!C || typeof C.use !== "function") { S.noDb = true; render(); return; }
+
+  var slowTimer = setTimeout(function () { S.slow = true; render(); }, 10000);
+  function markLoaded(name, snap) {
+    if (snap && snap.metadata && snap.metadata.fromCache && !S.loaded[name]) { render(); return; }
+    S.loaded[name] = true;
+    if (S.loaded.tasks && S.loaded.state) { S.ready = true; clearTimeout(slowTimer); }
+    render();
+  }
+  function onErr(name) {
+    return function (e) {
+      clearTimeout(slowTimer);
+      S.dbError = (e && e.code === "revoked") ? "アクセス権が変わりました。開き直してください。" : "通信が途切れました。開き直すと再接続します。";
+      S.loaded[name] = true; S.ready = true; render();
+    };
+  }
+  function listen(name, query, sortFn) {
+    query.onSnapshot(function (snap) {
+      var list = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      if (sortFn) list.sort(sortFn);
+      S[name] = list;
+      markLoaded(name, snap);
+    }, onErr(name));
+  }
+
+  C.use("db").then(function (db) {
+    if (!db) { clearTimeout(slowTimer); S.noDb = true; render(); return; }
+    S.db = db;
+    try {
+      listen("tasks", db.collection("tasks"));
+      listen("ideas", db.collection("ideas"));
+      listen("revenue", db.collection("revenue"));
+      listen("products", db.collection("products"));
+      listen("runs", db.collection("runs").orderBy("startedAt", "desc").limit(30));
+      listen("messages", db.collection("messages").orderBy("createdAt", "desc").limit(40));
+      db.doc("meta/state").onSnapshot(function (s) { S.state = s.exists ? s.data() : null; markLoaded("state", s); }, onErr("state"));
+      db.doc("meta/profile").onSnapshot(function (s) { S.profile = s.exists ? s.data() : null; markLoaded("profile", s); }, onErr("profile"));
+    } catch (e) {
+      S.dbError = "データの読み込みを始められませんでした。"; S.ready = true; render();
+    }
+  });
+  C.use("user").then(function (u) {
+    S.user = u;
+    if (u) u.isOwner().then(function (v) { S.notOwner = v === false && !!u; render(); });
+  });
+  C.use("downloads").then(function (d) { S.downloads = d; });
+  C.use("sample").then(function (s) { S.sample = s; render(); });
+  C.use("mcp").then(function (m) { S.mcp = m; });
+})();
+</script>

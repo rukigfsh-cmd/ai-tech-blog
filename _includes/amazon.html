@@ -1,0 +1,12 @@
+{%- comment -%}
+  Amazon の商品リンク。使い方:
+  {% include amazon.html asin="B0XXXXXXXX" title="商品名" note="ひとこと（任意）" %}
+  タグは _data/affiliate.yml の amazon_tag から入る（空なら通常リンク）。
+{%- endcomment -%}
+{%- assign tag = site.data.affiliate.amazon_tag -%}
+{%- capture href -%}https://www.amazon.co.jp/dp/{{ include.asin }}{% if tag != "" %}?tag={{ tag }}{% endif %}{%- endcapture -%}
+<div class="aff-box">
+  <span class="aff-label">PR</span>
+  <a class="aff-link" href="{{ href }}" target="_blank" rel="sponsored noopener">{{ include.title }}をAmazonで見る</a>
+  {%- if include.note %}<p class="aff-note">{{ include.note }}</p>{% endif %}
+</div>

@@ -89,31 +89,3 @@ A: AI生成物の著作権は法的に未確定です。ただし、Midjourney�
 
 Q3: Discord以外から使える？
 A: Midjourney本家はDiscord専用ですが、UIをWeb版化した「journey.ai」というサードパーティサービスもあります。
-<div class="amazon-search">
-  <form action="https://www.amazon.co.jp/search" method="get" target="_blank">
-    <input type="hidden" name="tag" value="aitechblog-22">
-    <input type="text" name="field-keywords" placeholder="Amazonで検索">
-    <button type="submit">検索</button>
-  </form>
-</div>
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "Midjourney画像生成でプロ級クオリティをどう作るか完全ガイド",
-  "description": "Midjourneyを使って画像生成の質を劇的に高めるコツと手法を解説。プロンプト作成からパラメータ調整まで、初心者でも上級者並みの成果が得られる具体的な方法を網羅。",
-  "author": {
-    "@type": "Organization",
-    "name": "AIテックラボ編集部"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "AIテックラボ",
-    "url": "https://rukigfsh-cmd.github.io/ai-tech-blog"
-  },
-  "datePublished": "2026-09-04",
-  "url": "https://rukigfsh-cmd.github.io/ai-tech-blog/posts/midjourney-画像生成-コツ"
-}
-</script>

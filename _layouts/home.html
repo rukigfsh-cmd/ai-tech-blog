@@ -1,0 +1,29 @@
+---
+layout: default
+---
+
+<div class="home">
+  {{ content }}
+
+  {%- if site.posts.size > 0 %}
+  <h2 class="post-list-heading">{{ page.list_title | default: "最新記事" }}</h2>
+  <ul class="post-list">
+    {%- for post in site.posts limit: 20 %}
+    <li>
+      <span class="post-meta">{{ post.date | date: "%Y年%m月%d日" }}{% if post.categories.size > 0 %}　{{ post.categories | first }}{% endif %}</span>
+      <h3><a class="post-link" href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></h3>
+      {%- if post.description %}
+      <p class="post-desc">{{ post.description | escape }}</p>
+      {%- endif %}
+    </li>
+    {%- endfor %}
+  </ul>
+  <p><a href="{{ '/archive.html' | relative_url }}">すべての記事を見る →</a></p>
+  <p class="rss-subscribe"><a href="{{ '/feed.xml' | relative_url }}">RSSで購読する</a></p>
+  {%- endif %}
+</div>
+
+<style>
+.post-desc { margin: 0.25rem 0 0; color: #555; font-size: 0.95rem; }
+@media (prefers-color-scheme: dark) { .post-desc { color: #aab4c0; } }
+</style>
