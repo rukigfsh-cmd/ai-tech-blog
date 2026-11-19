@@ -3,7 +3,7 @@ name: auto-publish
 # 稼ぎエンジンの自動公開。
 # Claude の定期実行は claude/** ブランチに push する。
 # 次の2条件を両方満たす push だけを main にマージして公開する:
-#   1) 最後のコミットメッセージに "[auto-publish]" が含まれる
+#   1) 最後のコミットの件名（1行目）に "[auto-publish]" がある、または "[auto-publish]" だけの行がある
 #   2) 変更ファイルがすべて下の許可リスト内（記事・画像・データ・運用メモ）
 # レイアウト・設定・ワークフロー・アプリ本体の変更は自動公開しない（人間がマージする）。
 
@@ -21,17 +21,22 @@ concurrency:
 
 jobs:
   publish:
-    if: contains(github.event.head_commit.message, '[auto-publish]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Check changed files against the allowlist
+      - name: Check the marker and the changed files
         id: check
         run: |
           set -euo pipefail
+          SUBJECT=$(git log -1 --format=%s "$GITHUB_SHA")
+          if [[ "$SUBJECT" != *"[auto-publish]"* ]] && ! git log -1 --format=%B "$GITHUB_SHA" | grep -qxE '[[:space:]]*\[auto-publish\][[:space:]]*'; then
+            echo "No [auto-publish] marker. Nothing to publish."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git fetch origin main
           BASE=$(git merge-base origin/main "$GITHUB_SHA")
           CHANGED=$(git -c core.quotePath=false diff --name-only "$BASE" "$GITHUB_SHA")
