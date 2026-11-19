@@ -9,6 +9,20 @@
 
 ---
 
+## 最重要: オーナーに頭を使わせない（おまかせモード）
+
+オーナーの希望は「ぽちるだけで済むこと」。`meta/profile.autopilot` が `false` でない限り、次を必ず守る。
+
+- **Claude が決める**: 無料・低リスク・合法で、オーナーの手間が `meta/profile.weeklyMinutes`（未設定なら週15分）以内に収まる案は、聞かずに進める（`active`）。手間が大きすぎる案や見込みの薄い案は、聞かずに見送る（`rejected` と理由）。
+- **聞くのはお金がかかることだけ**: そのときも「やる／やめる」の1タップ（`choices`）で聞き、Claude のおすすめに `recommended: true` を付ける。
+- **タスクは1タップが基本**: 答えは `choices`（ボタン）で受け取り、自由入力（`ask`）は使わない。1タスク＝1つの判断。
+- **どうしても作業が要るとき**（登録・出品など本人しかできない操作）は、開くページの `links`、貼るだけの `copy`、保存するだけの `files` をそろえ、手順は短く、5分以内を目指す。
+- テーマ選び・文章・デザインの良し悪しなど、中身の判断はオーナーにさせない。
+- 未完了のタスクは **最大3件**。超えるなら作らない。
+- 返事がないとき: `autoDefault: {value, afterDays}` があるタスクは、期限を過ぎたら既定値で答えたものとして進める（`answerLabel` に「自動: 既定値」と書く）。お金がかかる判断には `autoDefault` を付けない。
+
+---
+
 ## 0. 前提
 
 | 項目 | 内容 |
@@ -37,12 +51,14 @@ ArtifactData の注意: 既存ドキュメントへの書き込みには、読�
    - `tasks`, `ideas`, `products`（全件）
    - `revenue`（今月・先月）
    - `runs`（最新3件）
+   - main に、以前の自動投稿スクリプトのコミット（件名が「Add new posts - 」で始まる）が新しく増えていないか確認する。増えていたら記事が重複するので、止めてもらう1タップのタスク（「止めた／わからない」）を出す。
 5. 実行の種類を決める。起動プロンプトに追加の指示テキストがあれば、それを最優先で行う（kind: `manual`）。日本時間の月曜なら週次ディープリサーチも行う（kind: `weekly`）。それ以外は `daily`。
 
 ### 1-2 オーナーの入力を処理する（最優先）
 - **messages（new）**: 内容を実行するか計画する。必ず `status` を `done`（対応済み）か `seen`（確認済み・後日対応）にし、`reply` に1〜3行で返事を書き、`repliedAt` を入れる。
 - **tasks**: `status` が `done` / `skipped` で `processedAt` が無いもの
-  - `answer` があれば反映する（例: Amazon トラッキングID → `_data/affiliate.yml` と `meta/profile.ids.amazonTag`）。
+  - `answer` があれば反映する。`choices` のタスクは `answer` が選ばれたボタンの `value`。何をするかはタスクの `claudeNote` に書いてある（例: Amazon ID の確認 → `mine` なら維持、`unknown` なら `_data/affiliate.yml` の `amazon_tag` を空にする）。
+  - `todo` のまま `autoDefault` の期限（`createdAt` から `afterDays` 日）を過ぎたものは、既定値で答えたものとして扱い、`status: done`, `answer`, `answerLabel: "自動: 既定値"` を書いてから反映する。
   - 反映したら `processedAt` を入れる。
   - `skipped` は理由（`userNote`）を `meta/memory.lessons` に要約して残し、同じ種類のタスクを繰り返さない。
   - `snoozed` で `snoozeUntil` を過ぎたものは `todo` に戻す。
@@ -71,14 +87,16 @@ ArtifactData の注意: 既存ドキュメントへの書き込みには、読�
 | リスク | low=10 / mid=5 / high=0（high は原則提案しない） |
 | 初収益までの速さ | 〜2週間=5 / 〜2ヶ月=3 / それ以上=1 |
 
-### 1-4 自動承認ルール
-次の **すべて** を満たす案は、承認を待たずに `active` にして着手してよい（HQ に表示され、オーナーはいつでも止められる）:
+### 1-4 自動承認ルール（おまかせモード）
+次の **すべて** を満たす案は、承認を待たずに `active` にして着手する（HQ に表示され、オーナーはいつでも止められる）:
 - 初期費用 0円
 - risk が `low`
-- オーナーの手間が週15分以下
+- オーナーの手間が `meta/profile.weeklyMinutes`（未設定なら15分）以内
 - 規約上問題ないことを確認済み
 
-それ以外（お金がかかる、手間が大きい、規約がグレー）は `proposed` のまま承認を待つ。
+- 手間が大きすぎる・見込みが薄い・規約がグレーな案は、聞かずに `rejected`（`userNote` に「Claudeが判断: 理由」）。
+- お金がかかる案だけ `proposed` にし、同時に「やる／やめる」の1タップのタスク（`kind: decision`, `choices`）を出す。
+- `meta/profile.autopilot` が `false` のときは、従来どおり `active` 以外はすべて `proposed` にしてオーナーの GO を待つ。
 
 ### 1-5 生産（メインの作業）
 優先順:
@@ -101,8 +119,9 @@ ArtifactData の注意: 既存ドキュメントへの書き込みには、読�
 
 ### 1-7 オーナーのタスクを作る（「やること」に積む）
 - オーナーにしかできないことだけ: 本人名義の登録・本人確認・口座や税金・規約への同意・出品ボタンを押す・お金を使う判断・お客さんとのやりとり。
-- 1件ごとに必ず: `title`（〜する）、`why`（何がいくら良くなるか）、`minutes`、`valueNote`、`steps`（スマホでできる手順を1行ずつ）、`copy`（貼り付ける文章はすべてコピー欄に）、`links`。必要なら `ask`（入力してほしい項目）と `files`（保存してほしいファイル）。
-- 未完了（todo）は **最大5件**。超えるなら優先度の低いものは作らない。似たタスクを重複させない。
+- まず「1タップで答えられる形」にできないか考える。答えは `choices`（2〜4個のボタン、おすすめに `recommended: true`）で受け取り、何をするかを `claudeNote` に書いておく。安全な既定値があれば `autoDefault` を付ける。
+- 作業が要るタスクは: `title`（〜する）、`why`（1文）、`minutes`、`steps`（スマホでできる手順を1行ずつ、短く）、`copy`（貼り付ける文章はすべてコピー欄に）、`links`（開くページ）、必要なら `files`。自由入力の `ask` は最後の手段。
+- 未完了（todo）は **最大3件**。超えるなら優先度の低いものは作らない。似たタスクを重複させない。
 - パスワード・APIキー・カード番号などの秘密情報は求めない。
 - 期限があるものは `due` を入れる。
 
@@ -173,7 +192,7 @@ pr: false
 日時は ISO 8601（例 `2026-11-19T05:12:00+09:00`）、日付は `YYYY-MM-DD`、金額は円の数値。
 
 **tasks/{id}**（id 例 `t-20261119-amazon`）
-`title, why, kind(account|listing|decision|review|input|other), channel, minutes, valueNote, valueYen?, priority(1|2|3), steps[], copy[{label,text}], links[{label,url}], files[{label,assetId,filename}], ask?{label,placeholder,multiline?}, due?, status(todo|done|skipped|snoozed), answer, userNote, snoozeUntil?, createdAt, updatedAt, doneAt?, processedAt?`
+`title, why, kind(account|listing|decision|review|input|other), channel, minutes, valueNote, valueYen?, priority(1|2|3), steps[], copy[{label,text}], links[{label,url}], files[{label,assetId,filename}], choices?[{label,value,recommended?}], autoDefault?{value,afterDays}, claudeNote?（アプリには出ない Claude 向けメモ）, ask?{label,placeholder,multiline?}, due?, status(todo|done|skipped|snoozed), answer, answerLabel?, userNote, snoozeUntil?, createdAt, updatedAt, doneAt?, processedAt?`
 
 **ideas/{id}**（id 例 `i-20261119-booth-prompts`）
 `title, summary, channel, why, nextStep, monthlyLow, monthlyHigh, userMinutesWeek, automation(0-100), startCostYen, risk(low|mid|high), riskNote, firstYen, score(0-100), sources[{title,url}], status(proposed|approved|rejected|active|paused|done), userNote, createdAt, updatedAt, decidedAt?`
@@ -194,7 +213,7 @@ pr: false
 `phase, strategy, channels[{key,name,status(active|setup|idea|paused),metric,note}], kpi{posts,products,openTasks,monthRevenue}, lastRunAt, nextRunAt, schedule, triggerId, blogUrl, repo, updatedAt`
 
 **meta/profile**（オーナーが HQ の設定で編集）
-`weeklyMinutes, goalMonthly, interests, avoid, skills, notes, contactEmail, ids{amazonTag,rakutenId,a8Id,adsenseId}, updatedAt`
+`autopilot（false でなければおまかせモード）, weeklyMinutes, goalMonthly, interests, avoid, skills, notes, contactEmail, ids{amazonTag,rakutenId,a8Id,adsenseId}, updatedAt`
 
 **meta/memory**
 `lessons[], rejectedPatterns[], posts[{date,title,url}], notes`
@@ -206,11 +225,11 @@ pr: false
 
 ## 6. 立ち上げ期の方針（最初の1〜2ヶ月）
 
-1. ブログの土台を直す（重複記事・誤った情報・誇大表現・OGP画像）。
-2. アフィリエイト登録（Amazon・楽天）。ID が届いたら関連記事に自然な商品リンクを入れる。
-3. 独自ドメインの提案（AdSense 審査と GitHub Pages の商用利用の制限への対策）。
-4. 最初のデジタル商品を1つ作り、BOOTH か note で売る。
-5. 週次リサーチの結果を ideas に足し、スコアの高い順に着手する。
+1. ブログの土台を直す（品質チェックリストを毎朝1〜2件）。
+2. 最初の商品「ローカルLLM導入ガイド」（BOOTH・PDF）を作る。完成したら、出品だけを短い手順のタスクにする。
+3. Amazon ID の確認（1タップ）の答えに合わせて、紹介リンクを調整する。楽天は記事のアクセスが育つまで出さない。
+4. 品質が上がったら（2〜4週間後）、独自ドメイン＋AdSense を「やる／やめる」の1タップで聞く。
+5. 週次リサーチの結果を ideas に足し、おまかせモードのルールで着手・見送りを決める。
 
 ---
 
